@@ -44,10 +44,18 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
 			case 'p':
 				this->getports(optarg);
 				break;
+			default:
+				this->usage(stderr);
+				break;
 		}
  	}
 }
 
+/*
+ * getports() -> void
+ * makes note of each port specified at command line
+ */
 void ArgsParser::getports(char *str) {
-
+	char *token;
+	char delim[] = ",-";
 }
