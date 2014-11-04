@@ -1,0 +1,18 @@
+
+==========================================================================================
+# Milestone1
+==========================================================================================
+* be able to parse all command line arguments, read IP addresses
+from input files, and convert the supplied IP prefixes to a list of individual IP addresses
+	• --help. Example: “./portScanner --help”.
+	• --ports <ports to scan>. Example: “./portScanner --ports 1,2,3-5”.
+	• --ip <IP address to scan>. Example: “./portScanner --ip 127.0.0.1”.
+	• --prefix <IP prefix to scan>. Example: “./portScanner --prefix 127.143.151.123/24”.
+	• --file <file name containing IP addresses to scan>. Example: “./portScanner --file filename.txt”.
+	• --speedup <parallel threads to use>. Example: “./portScanner --speedup 10”.
+	• --scan <one or more scans>. Example: “./portScanner --scan SYN NULL FIN XMAS”.
+* print out to the terminal the list of IP addresses that the program was supplied with
+* add verbose mode ?
+
+# Test cases
+* can ipAddresses.txt file contain IP prefixes too?
