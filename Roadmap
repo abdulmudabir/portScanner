@@ -18,4 +18,6 @@ from input files, and convert the supplied IP prefixes to a list of individual I
 * can the static vector<int> ports_vect be included in the ArgsParser class instead of being in global scope ?
 
 # Test cases
+* need to ignore input where ports specified are incorrect / out of range
 * can ipAddresses.txt file contain IP prefixes too?
+* can --ip be specified as "tank.soic.indiana.edu" ?

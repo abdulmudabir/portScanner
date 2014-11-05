@@ -7,13 +7,14 @@
 #include <cstring>
 #include <string>
 #include <cstdlib>
-#include <vector>
-
-using namespace std;
 
 /********** global variables declaration ************************************/
-static vector<int> ports_vect;
-static vector<int>::iterator vect_itr;
+//------------- for ports ------------------------------------------------
+static vector<int> ports_vect;	// to store ports that need to be scanned
+static vector<int>::iterator vect_itr;	// an iterator for ports 'vector'
+//------------- for IP addresses  ----------------------------------------
+static vector<struct sockaddr_in> hosts_vect;	// to store IP addresses of hosts specified at cli
+// static vector<struct sockaddr_in> hosts_itr;	// iterator for IP addresses' 'vector'
 /********** end global variables declaration ************************************/
 
 /* default constructor for class ArgsParser */
@@ -55,9 +56,12 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
 			case 'p':
 				this->getports(optarg);
 				break;
+			case 'i':
+				this->gethosts(optarg);
+				break;
 			default:
 				this->usage(stderr);
-				break;
+				exit(1);
 		}
  	}
 }
@@ -86,4 +90,20 @@ void ArgsParser::getports(char *str) {
 			ports_vect.push_back(atoi(token));
 		}
 	}
+}
+
+void ArgsParser::gethosts(char *ip) {
+	struct hostent *hostinfo;	// hostent struct contains information like IP address, host name, etc.
+
+	if ( (hostinfo = gethostbyname(ip)) == NULL) {
+		fprintf(stderr, "Error: Host not found !");
+		exit(1);
+	}
+
+	struct sockaddr_in hostip;	// to store IP address data structure
+	hostip.sin_family = AF_INET;	// set Internet Addressing as IP family type
+	memcpy( (char *) &hostip.sin_addr.s_addr, (char *) hostinfo->h_addr, strlen((char *) hostinfo->h_addr) );
+	
+	// push the construct host IP into the IP addresses vector
+	hosts_vect.push_back(hostip);
 }
