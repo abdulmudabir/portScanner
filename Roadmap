@@ -14,5 +14,8 @@ from input files, and convert the supplied IP prefixes to a list of individual I
 * print out to the terminal the list of IP addresses that the program was supplied with
 * add verbose mode ?
 
+# code refactor
+* can the static vector<int> ports_vect be included in the ArgsParser class instead of being in global scope ?
+
 # Test cases
 * can ipAddresses.txt file contain IP prefixes too?

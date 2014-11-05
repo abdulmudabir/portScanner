@@ -2,8 +2,19 @@
 #include "ps_lib.h"
 
 // standard libraries
+#include <iostream>
+#include <cstdio>
 #include <cstring>
+#include <string>
 #include <cstdlib>
+#include <vector>
+
+using namespace std;
+
+/********** global variables declaration ************************************/
+static vector<int> ports_vect;
+static vector<int>::iterator vect_itr;
+/********** end global variables declaration ************************************/
 
 /* default constructor for class ArgsParser */
 ArgsParser::ArgsParser() {
@@ -56,6 +67,23 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
  * makes note of each port specified at command line
  */
 void ArgsParser::getports(char *str) {
-	char *token;
-	char delim[] = ",-";
+	char delim[] = ",";	// tokenize char array on ","
+	char *token;	// token holder
+
+	for ( (token = strtok(str, delim)); token; token = strtok(NULL, delim) ) {	// tokenize until all tokens are retrieved
+		string token_str(token);	// convert to type: string
+		size_t dash_pos;	// holds index of the "-" if it is present in a token
+		if ( ( dash_pos = token_str.find("-") ) != string::npos ) {	// check if "-" is present in token
+			string port1_str(token_str.substr(0, dash_pos));	// string containing number upto "-"
+			int start_port = atoi(port1_str.c_str());	// convert to integer
+			string port2_str(token_str.substr(dash_pos + 1));	// string containing number following the "-"
+			int end_port = atoi(port2_str.c_str());
+
+			for (int i = start_port; i <= end_port; i++)	// fill ports vector with all ports from the start to end of the ports range
+				ports_vect.push_back(i);
+			
+		} else {
+			ports_vect.push_back(atoi(token));
+		}
+	}
 }
