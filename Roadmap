@@ -20,3 +20,5 @@ from input files, and convert the supplied IP prefixes to a list of individual I
 # Test cases
 * need to ignore input where ports specified are incorrect / out of range
 * can ipAddresses.txt file contain IP prefixes too ?
+* $ ./portScanner --ip 17 works but it shouldn't; produces IP: 0.0.0.17; REJECT this input
+* 

@@ -1,4 +1,9 @@
 
+/*
+ * References:
+ * 	http://man7.org/linux/man-pages/man3/inet_pton.3.html (convert IP to binary)
+ */
+
 #include "ps_lib.h"
 
 // standard libraries
@@ -55,7 +60,7 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
 				this->gethosts(optarg);
 				break;
 			case 'x':
-				this->getprefixes(optarg);
+				this->parse_prefixes(optarg);
 				break;
 			default:
 				this->usage(stderr);
@@ -94,7 +99,7 @@ void ArgsParser::gethosts(char *ip) {
 	struct hostent *hostinfo;	// hostent struct contains information like IP address, host name, etc.
 
 	if ( (hostinfo = gethostbyname(ip)) == NULL) {
-		fprintf(stderr, "Error: Host not found !");
+		fprintf(stderr, "Error: Host not found !\n");
 		exit(1);
 	}
 
@@ -103,11 +108,52 @@ void ArgsParser::gethosts(char *ip) {
 	memcpy( (char *) &hostip.sin_addr.s_addr, (char *) hostinfo->h_addr_list[0], strlen((char *) hostinfo->h_addr_list) );	// register IP address of host specified at cli
 	
 	string ip_holder(inet_ntoa(hostip.sin_addr));
+	cout << "testing, ip_holder: " << ip_holder << endl;
 
 	hosts_vect.push_back(ip_holder);
 
 }
 
-void ArgsParser::getprefixes(char *) {
+void ArgsParser::parse_prefixes(char *prefix) {
 	
+	/* tokenize IP prefix to separate forward-slash part */
+	char *token;
+	char delim[] = "/";
+	char netw_addr[INET_ADDRSTRLEN], lead_bits[2];	// for IP prefix format: "network-addr/lead-bits"
+	int i = 0;
+	char addr_buf[sizeof(struct in_addr)];	// to store binary form of IP
+	for ( (token = strtok(prefix, delim)); (token != NULL && i < 2); (token = strtok(NULL, delim)), i++ ) {
+		switch(i) {
+			case 0:
+				snprintf(netw_addr, (strlen(token) + 1), "%s", token);
+				break;
+			case 1:
+				snprintf(lead_bits, (strlen(token) + 1), "%s", token);
+				break;
+			default:
+				break;
+		}
+	}
+
+	if (i != 2) {	// all other cases should mean an error; terminate program
+		fprintf(stderr, "Something's not right with the IP prefix.\n");
+		this->usage(stderr);
+		exit(1);
+	}
+
+	if ( ( i = inet_pton(AF_INET, netw_addr, addr_buf) ) <= 0 ) {	// only integer value "1" indicates success
+		if (i == 0) {
+			fprintf(stderr, "Specified network address in IP prefix is not a valid network address.\n");
+			this->usage(stderr);
+			exit(1);
+		} else {
+			cout << "testing, after inet_pton(), i: " << i << endl;
+			fprintf(stderr, "Unable to understand specified network address in IP prefix.\n");
+			this->usage(stderr);
+			exit(1);
+		}
+	}
+
+	cout << "testing, addr_buf" << addr_buf << endl;
+
 }

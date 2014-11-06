@@ -36,7 +36,7 @@ class ArgsParser {
 		void parse_args(int, char**);
 		void getports(char *);
 		void gethosts(char *);
-		void getprefixes(char *);
+		void parse_prefixes(char *);
 };
 
 static struct option longopts[]  = {
