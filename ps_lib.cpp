@@ -7,6 +7,11 @@
 #include <cstring>
 #include <cstdlib>
 
+/* recall all global variables */
+vector<int> ports_vect;
+vector<int>::iterator vect_itr;
+vector<string> hosts_vect;
+
 /* default constructor for class ArgsParser */
 ArgsParser::ArgsParser() {
 	memset(this->filename, 0x00, sizeof(this->filename));	// null filename by default
@@ -48,6 +53,9 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
 				break;
 			case 'i':
 				this->gethosts(optarg);
+				break;
+			case 'x':
+				this->getprefixes(optarg);
 				break;
 			default:
 				this->usage(stderr);
@@ -96,10 +104,10 @@ void ArgsParser::gethosts(char *ip) {
 	
 	string ip_holder(inet_ntoa(hostip.sin_addr));
 
-	cout << "testing, IP addr: " << ip_holder << endl;
 	hosts_vect.push_back(ip_holder);
 
-	cout << "size of ports_vect: " << ports_vect.size() << endl;
-	cout << "size of hosts_vect: " << hosts_vect.size() << endl;
+}
 
+void ArgsParser::getprefixes(char *) {
+	
 }
