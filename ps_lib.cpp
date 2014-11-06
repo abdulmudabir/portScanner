@@ -5,17 +5,7 @@
 #include <iostream>
 #include <cstdio>
 #include <cstring>
-#include <string>
 #include <cstdlib>
-
-/********** global variables declaration ************************************/
-//------------- for ports ------------------------------------------------
-static vector<int> ports_vect;	// to store ports that need to be scanned
-static vector<int>::iterator vect_itr;	// an iterator for ports 'vector'
-//------------- for IP addresses  ----------------------------------------
-static vector<struct sockaddr_in> hosts_vect;	// to store IP addresses of hosts specified at cli
-// static vector<struct sockaddr_in> hosts_itr;	// iterator for IP addresses' 'vector'
-/********** end global variables declaration ************************************/
 
 /* default constructor for class ArgsParser */
 ArgsParser::ArgsParser() {
@@ -102,8 +92,14 @@ void ArgsParser::gethosts(char *ip) {
 
 	struct sockaddr_in hostip;	// to store IP address data structure
 	hostip.sin_family = AF_INET;	// set Internet Addressing as IP family type
-	memcpy( (char *) &hostip.sin_addr.s_addr, (char *) hostinfo->h_addr, strlen((char *) hostinfo->h_addr) );
+	memcpy( (char *) &hostip.sin_addr.s_addr, (char *) hostinfo->h_addr_list[0], strlen((char *) hostinfo->h_addr_list) );	// register IP address of host specified at cli
 	
-	// push the construct host IP into the IP addresses vector
-	hosts_vect.push_back(hostip);
+	string ip_holder(inet_ntoa(hostip.sin_addr));
+
+	cout << "testing, IP addr: " << ip_holder << endl;
+	hosts_vect.push_back(ip_holder);
+
+	cout << "size of ports_vect: " << ports_vect.size() << endl;
+	cout << "size of hosts_vect: " << hosts_vect.size() << endl;
+
 }

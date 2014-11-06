@@ -11,7 +11,7 @@ all: $(BIN)
 $(BIN): $(OBJ)
 	$(CC) $(CPFLAGS) $(LDFLAGS) $(OBJ) -o $(BIN)
 
-%.o:%.c
+%.o:%.cpp
 	$(CC) -c $(CPFLAGS) -o $@ $<
 
 $(SRC):

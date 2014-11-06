@@ -4,6 +4,7 @@
 
 // standard libraries
 #include <cstdio>
+#include <string>
 #include <getopt.h>
 #include <sys/types.h>
 
@@ -16,6 +17,15 @@
 #include <vector>
 
 using namespace std;
+
+/********** global variables declaration ************************************/
+//------------- for ports ------------------------------------------------
+static vector<int> ports_vect;	// to store ports that need to be scanned
+static vector<int>::iterator vect_itr;	// an iterator for ports 'vector'
+//------------- for IP addresses  ----------------------------------------
+static vector<string> hosts_vect;	// to store IP addresses of hosts specified at cli
+// static vector<struct sockaddr_in> hosts_itr;	// iterator for IP addresses' 'vector'
+/********** end global variables declaration ************************************/
 
 class ArgsParser {
 	private:
