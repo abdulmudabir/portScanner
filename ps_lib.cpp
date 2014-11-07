@@ -34,7 +34,7 @@ void ArgsParser::usage(FILE *file) {
  					"	--help						\tPrint instructions on how to run portScanner\n"
  					"	--ports <ports to scan>				\tScan specified ports on IP address\n"
  					"	--ip <IP address to scan>			\tScan ports on specified IP address\n"
- 					"	--prefix <IP prefix to scan>			\tScan a range of IP addresses\n"
+ 					"	--prefix <IP prefix to scan>			\tScan a range of IP addresses. Eg. $ ./portScanner --prefix 127.0.0.1/24\n"
  					"	--file <file name containing IP addresses to scan>\tRead specified file name that contains list of IP addresses to scan\n"
  					"	--speedup <parallel threads to use>		\tMulti-threaded version of portScanner; specifies number of threads to be used\n"
  					"	--scan <one or more scans>			\tType of scan to be performed\n"
@@ -120,8 +120,11 @@ void ArgsParser::parse_prefixes(char *prefix) {
 	char *token;
 	char delim[] = "/";
 	char netw_addr[INET_ADDRSTRLEN], lead_bits[2];	// for IP prefix format: "network-addr/lead-bits"
+	memset(netw_addr, 0x00, sizeof netw_addr);
+	memset(lead_bits, 0x00, sizeof lead_bits);
 	int i = 0;
-	char addr_buf[sizeof(struct in_addr)];	// to store binary form of IP
+	char addr_buf[sizeof(struct in_addr)];	// to store numeric address of IP; struct size: 4 bytes for IPv4
+	memset(addr_buf, 0x00, sizeof addr_buf);
 	for ( (token = strtok(prefix, delim)); (token != NULL && i < 2); (token = strtok(NULL, delim)), i++ ) {
 		switch(i) {
 			case 0:
@@ -148,12 +151,11 @@ void ArgsParser::parse_prefixes(char *prefix) {
 			exit(1);
 		} else {
 			cout << "testing, after inet_pton(), i: " << i << endl;
-			fprintf(stderr, "Unable to understand specified network address in IP prefix.\n");
+			fprintf(stderr, "Not a valid address family. Report this to developer.\n");
 			this->usage(stderr);
 			exit(1);
 		}
 	}
 
-	cout << "testing, addr_buf" << addr_buf << endl;
-
+	// still need to do something about converting that addr_buf into some useful binary
 }
