@@ -1,7 +1,10 @@
 
 /*
  * References:
- * 	http://man7.org/linux/man-pages/man3/inet_pton.3.html (convert IP to binary)
+ * 	http://linux.die.net/man/3/inet_addr 					// convert IP to binary
+ * 	http://man7.org/linux/man-pages/man3/inet_pton.3.html
+ * 	http://linux.die.net/man/3/inet_aton
+ * 	http://stackoverflow.com/questions/2182002/convert-big-endian-to-little-endian-in-c-without-using-provided-func
  */
 
 #include "ps_lib.h"
@@ -116,15 +119,15 @@ void ArgsParser::gethosts(char *ip) {
 
 void ArgsParser::parse_prefixes(char *prefix) {
 	
-	/* tokenize IP prefix to separate forward-slash part */
-	char *token;
+	char *token;	// to tokenize IP prefix to separate forward-slash part
 	char delim[] = "/";
 	char netw_addr[INET_ADDRSTRLEN], lead_bits[2];	// for IP prefix format: "network-addr/lead-bits"
-	memset(netw_addr, 0x00, sizeof netw_addr);
-	memset(lead_bits, 0x00, sizeof lead_bits);
 	int i = 0;
-	char addr_buf[sizeof(struct in_addr)];	// to store numeric address of IP; struct size: 4 bytes for IPv4
-	memset(addr_buf, 0x00, sizeof addr_buf);
+	
+	memset(netw_addr, 0x00, sizeof netw_addr);	// zero-out buffers initially
+	memset(lead_bits, 0x00, sizeof lead_bits);
+	// char addr_buf[sizeof(struct in_addr)];	// to store numeric address of IP; struct size: 4 bytes for IPv4
+	// memset(addr_buf, 0x00, sizeof addr_buf);
 	for ( (token = strtok(prefix, delim)); (token != NULL && i < 2); (token = strtok(NULL, delim)), i++ ) {
 		switch(i) {
 			case 0:
@@ -138,24 +141,46 @@ void ArgsParser::parse_prefixes(char *prefix) {
 		}
 	}
 
-	if (i != 2) {	// all other cases should mean an error; terminate program
+	if (i != 2) {	// all cases other than "i = 2" should mean an error; terminate program
 		fprintf(stderr, "Something's not right with the IP prefix.\n");
 		this->usage(stderr);
 		exit(1);
 	}
 
-	if ( ( i = inet_pton(AF_INET, netw_addr, addr_buf) ) <= 0 ) {	// only integer value "1" indicates success
-		if (i == 0) {
-			fprintf(stderr, "Specified network address in IP prefix is not a valid network address.\n");
-			this->usage(stderr);
-			exit(1);
-		} else {
-			cout << "testing, after inet_pton(), i: " << i << endl;
-			fprintf(stderr, "Not a valid address family. Report this to developer.\n");
-			this->usage(stderr);
-			exit(1);
-		}
-	}
+	// IP VALIDATION NEEDED HERE, BEFORE USING inet_aton()
 
-	// still need to do something about converting that addr_buf into some useful binary
+	unsigned int uint_addr = 0;	// to store network byte order long of string IP
+	if ( (i = inet_aton(netw_addr, (struct in_addr *) &uint_addr)) < 1 ) {	// convert IP to long in network byte order; inet_aton() returns non-zero for SUCCESS
+		fprintf(stderr, "Error: Could not understand network address in IP prefix.\n");
+		this->usage(stderr);
+		exit(1);
+	}
+	
+	unsigned int rev_endn = this->convert_endianness(uint_addr);
+	// cout << "testing, revend: " << rev_endn << endl;
+
+	// create netmask
+	unsigned int netw_bits = atoi(lead_bits);
+	unsigned int netmask = 4294967295 << (32 - netw_bits);
+	cout << "testing, netmask: " << netmask << endl;
+
+	unsigned int masked_rev_endn = rev_endn & netmask;	// apply Netmask
+	masked_rev_endn = this->convert_endianness(masked_rev_endn);
+	cout << "testing, masked_rev_endn: " << masked_rev_endn << endl;
+	char next_ip[20];
+	memset(next_ip, 0x00, sizeof next_ip);
+	sprintf( next_ip, "%s", inet_ntoa( *(struct in_addr *) &masked_rev_endn ) );
+	cout << "testing, first IP: " << next_ip << endl;
+
+	// get next IP addr in range (NOT WORKING !!)
+	masked_rev_endn = masked_rev_endn | 0x00000001;
+	memset(next_ip, 0x00, sizeof next_ip);
+	sprintf( next_ip, "%s", inet_ntoa( *(struct in_addr *) &masked_rev_endn ) );	
+	cout << "testing, next IP: " << next_ip << endl;
+
+}
+
+/* converts endianness of a number (specifically from little-endian to big-endian for x86 machines) */
+inline unsigned int ArgsParser::convert_endianness(unsigned int n) {
+	return ( (n << 24) | ( (n << 8) & 0xff0000 ) | ( (n >> 8) & 0xff00 ) | (n >> 24) );
 }

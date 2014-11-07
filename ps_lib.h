@@ -37,6 +37,7 @@ class ArgsParser {
 		void getports(char *);
 		void gethosts(char *);
 		void parse_prefixes(char *);
+		unsigned int convert_endianness(unsigned int);
 };
 
 static struct option longopts[]  = {
@@ -45,7 +46,7 @@ static struct option longopts[]  = {
 	{"ip", 		required_argument, 	0, 	'i'},
 	{"prefix", 	required_argument, 	0, 	'x'},
 	{"file", 	required_argument, 	0, 	'f'},
-	{"speedup", required_argument, 	0, 	'u'},
+	{"speedup", required_argument, 	0, 	't'},
 	{"scan", 	required_argument, 	0, 	's'},
 	{0, 0, 0, 0}
 };
