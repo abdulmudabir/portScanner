@@ -1,9 +1,7 @@
 
 /*
  * References:
- * 	http://linux.die.net/man/3/inet_addr 					// convert IP to binary
- * 	http://man7.org/linux/man-pages/man3/inet_pton.3.html
- * 	http://linux.die.net/man/3/inet_aton
+ * 	http://linux.die.net/man/3/inet_aton	// convert IP to binary; reverse endianness
  * 	http://stackoverflow.com/questions/2182002/convert-big-endian-to-little-endian-in-c-without-using-provided-func
  */
 
@@ -14,11 +12,14 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <limits.h>
+#include <cmath>
 
 /* recall all global variables */
 vector<int> ports_vect;
-vector<int>::iterator vect_itr;
-vector<string> hosts_vect;
+vector<int>::iterator intvect_itr;
+vector<string> ips_vect;
+vector<string>::iterator strvect_itr;
 
 /* default constructor for class ArgsParser */
 ArgsParser::ArgsParser() {
@@ -60,7 +61,7 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
 				this->getports(optarg);
 				break;
 			case 'i':
-				this->gethosts(optarg);
+				this->getIP(optarg);
 				break;
 			case 'x':
 				this->parse_prefixes(optarg);
@@ -98,7 +99,7 @@ void ArgsParser::getports(char *str) {
 	}
 }
 
-void ArgsParser::gethosts(char *ip) {
+void ArgsParser::getIP(char *ip) {
 	struct hostent *hostinfo;	// hostent struct contains information like IP address, host name, etc.
 
 	if ( (hostinfo = gethostbyname(ip)) == NULL) {
@@ -110,25 +111,26 @@ void ArgsParser::gethosts(char *ip) {
 	hostip.sin_family = AF_INET;	// set Internet Addressing as IP family type
 	memcpy( (char *) &hostip.sin_addr.s_addr, (char *) hostinfo->h_addr_list[0], strlen((char *) hostinfo->h_addr_list) );	// register IP address of host specified at cli
 	
-	string ip_holder(inet_ntoa(hostip.sin_addr));
-	cout << "testing, ip_holder: " << ip_holder << endl;
+	string ip_holder(inet_ntoa(hostip.sin_addr));	// convert IP char array to string
 
-	hosts_vect.push_back(ip_holder);
+	ips_vect.push_back(ip_holder);	// add to IP kitty
 
 }
 
 void ArgsParser::parse_prefixes(char *prefix) {
 	
-	char *token;	// to tokenize IP prefix to separate forward-slash part
+	// copy "prefix" into a new variable; keep "prefix" untouched coz strtok() misbehaves
+	char prefix_cpy[strlen(prefix) + 1];
+	snprintf(prefix_cpy, sizeof prefix_cpy, "%s", prefix);
+
+	char *token;	// to tokenize IP prefix by separating forward-slash
 	char delim[] = "/";
-	char netw_addr[INET_ADDRSTRLEN], lead_bits[2];	// for IP prefix format: "network-addr/lead-bits"
+	char *netw_addr = new char[INET_ADDRSTRLEN + 1];	// allocate memory to hold IP
+	char *lead_bits = new char[3];	// decimal after "/" in IP prefix cannot be more than 2 digits + 1 for null-terminator
 	int i = 0;
-	
-	memset(netw_addr, 0x00, sizeof netw_addr);	// zero-out buffers initially
-	memset(lead_bits, 0x00, sizeof lead_bits);
-	// char addr_buf[sizeof(struct in_addr)];	// to store numeric address of IP; struct size: 4 bytes for IPv4
-	// memset(addr_buf, 0x00, sizeof addr_buf);
-	for ( (token = strtok(prefix, delim)); (token != NULL && i < 2); (token = strtok(NULL, delim)), i++ ) {
+
+	/* separate IP from trailing bits part */
+	for ( (token = strtok(prefix_cpy, delim)); (token != NULL && i < 2); (token = strtok(NULL, delim)), i++ ) {
 		switch(i) {
 			case 0:
 				snprintf(netw_addr, (strlen(token) + 1), "%s", token);
@@ -142,45 +144,76 @@ void ArgsParser::parse_prefixes(char *prefix) {
 	}
 
 	if (i != 2) {	// all cases other than "i = 2" should mean an error; terminate program
-		fprintf(stderr, "Something's not right with the IP prefix.\n");
+		fprintf(stderr, "Error: Something's not right with the IP prefix.\n");
 		this->usage(stderr);
 		exit(1);
 	}
 
 	// IP VALIDATION NEEDED HERE, BEFORE USING inet_aton()
 
-	unsigned int uint_addr = 0;	// to store network byte order long of string IP
-	if ( (i = inet_aton(netw_addr, (struct in_addr *) &uint_addr)) < 1 ) {	// convert IP to long in network byte order; inet_aton() returns non-zero for SUCCESS
-		fprintf(stderr, "Error: Could not understand network address in IP prefix.\n");
+	unsigned long uint_addr;	// to store network byte order long of string IP (long -> 4 bytes)
+	if ( (i = inet_aton(netw_addr, (struct in_addr *) &uint_addr)) < 1 ) {	// convert IP to long in network byte order
+		fprintf(stderr, "Error: Could not understand network address in IP prefix.\n");	// inet_aton() returns non-zero for SUCCESS
 		this->usage(stderr);
 		exit(1);
 	}
 	
-	unsigned int rev_endn = this->convert_endianness(uint_addr);
-	// cout << "testing, revend: " << rev_endn << endl;
+	uint32_t rev_endn = this->convert_endianness( (uint32_t) uint_addr);	// reverse endianness
 
 	// create netmask
-	unsigned int netw_bits = atoi(lead_bits);
-	unsigned int netmask = 4294967295 << (32 - netw_bits);
-	cout << "testing, netmask: " << netmask << endl;
+	uint32_t netw_bits = atoi(lead_bits);	// convert string to integer
+	int host_bits = (32 - netw_bits);	// 32-bit IPv4 address would have host_bits amount reserved to get host addresses
+	uint32_t netmask = UINT_MAX << host_bits;	// UINT_MAX to pacify ISO C90 warning when using "4294967295"
 
-	unsigned int masked_rev_endn = rev_endn & netmask;	// apply Netmask
-	masked_rev_endn = this->convert_endianness(masked_rev_endn);
-	cout << "testing, masked_rev_endn: " << masked_rev_endn << endl;
+	uint32_t masked_rev_endn = rev_endn & netmask;	// apply Netmask
+	uint32_t revofmaskedrev_endn = this->convert_endianness(masked_rev_endn);	// reverse endianness again before using inet_ntoa() coz it will reverse it anyway
+	
+	// store netmasked reverse endianned IP as string
 	char next_ip[20];
-	memset(next_ip, 0x00, sizeof next_ip);
-	sprintf( next_ip, "%s", inet_ntoa( *(struct in_addr *) &masked_rev_endn ) );
-	cout << "testing, first IP: " << next_ip << endl;
+	memset(next_ip, 0x00, sizeof next_ip);	// zero-out IP holder initially
+	sprintf( next_ip, "%s", inet_ntoa( *(struct in_addr *) &revofmaskedrev_endn ) );
 
-	// get next IP addr in range (NOT WORKING !!)
-	masked_rev_endn = masked_rev_endn | 0x00000001;
-	memset(next_ip, 0x00, sizeof next_ip);
-	sprintf( next_ip, "%s", inet_ntoa( *(struct in_addr *) &masked_rev_endn ) );	
-	cout << "testing, next IP: " << next_ip << endl;
+	ips_vect.push_back( (string) next_ip );	// push first IP in range to IP kitty
+
+	/* push all successively generated IP addresses in specified range to vector */
+	uint32_t loopvar = 1;
+	uint32_t orred;
+	uint32_t revorred;
+	while ( loopvar < (uint32_t) this->powerof2(host_bits) ) {	// loop until all end of IP range where all host bits are set
+
+		orred = masked_rev_endn | loopvar;	// generate next binary
+		revorred = convert_endianness(orred);	// reverse endianness before inet_ntoa()
+		memset(next_ip, 0x00, sizeof next_ip);	// flush buffer
+		sprintf( next_ip, "%s", inet_ntoa( *(struct in_addr *) &revorred ) );
+		ips_vect.push_back( (string) next_ip );	// add to IP kitty
+
+		loopvar++;
+	}
+
+	/* free allocated memory */
+	delete[] netw_addr;
+	delete[] lead_bits;
 
 }
 
 /* converts endianness of a number (specifically from little-endian to big-endian for x86 machines) */
-inline unsigned int ArgsParser::convert_endianness(unsigned int n) {
+inline uint32_t ArgsParser::convert_endianness(uint32_t n) {
 	return ( (n << 24) | ( (n << 8) & 0xff0000 ) | ( (n >> 8) & 0xff00 ) | (n >> 24) );
+}
+
+/* returns 2 raised to (number passed as argument) */
+inline uint32_t ArgsParser::powerof2(int n) {
+	return ( pow(2.0, (double) n) );	// math function for a raised to b: pow(a, b)
+}
+
+/* prints all elements found in vector<int> container passed as argument */
+void ArgsParser::print_vectelems(vector<int> &vect) {
+	for ( intvect_itr = vect.begin(); intvect_itr != vect.end(); intvect_itr++)
+		cout << *intvect_itr << endl;
+}
+
+/* overloaded print_vectelems() function for vector<string> */
+void ArgsParser::print_vectelems(vector<string> &vect) {
+	for ( strvect_itr = vect.begin(); strvect_itr != vect.end(); strvect_itr++)
+		cout << *strvect_itr << endl;
 }

@@ -1,6 +1,6 @@
 CC = g++
 CPFLAGS = -g -Wall -Wextra
-LDFLAGS = -pthread
+LDFLAGS = -lm -pthread
 
 SRC = portScanner.cpp ps_lib.cpp
 OBJ = $(SRC:.cpp=.o)

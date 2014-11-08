@@ -16,13 +16,15 @@ from input files, and convert the supplied IP prefixes to a list of individual I
 
 # code refactor
 * can the "vector<int> ports_vect" be included in the ArgsParser class instead of being in global scope ?
+* can reduce number of variables in parse_prefixes by passing args to convert_endianness() by &
 
 # Test cases
 * need to ignore input where ports specified are 
 	** incorrect / out of range
 	** contain floating point values
 	** contain chars other than ",-"
+* have default ports set as 1-1024 if "--ports" is not specified
 * can ipAddresses.txt file contain IP prefixes too ? YES for now
 * $ ./portScanner --ip 17 works but it shouldn't; produces IP: 0.0.0.17; REJECT such input
 	** ignore input like 0.1.2.3 (Invalid IP addr)
-* validate correct IP and correct prefix with "--prefix"
+* validate correct IP and correct prefix with "--prefix" (IP check same as that for "--ip")

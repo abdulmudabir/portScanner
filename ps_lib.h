@@ -22,8 +22,9 @@ using namespace std;
 #define vars
 
 extern vector<int> ports_vect;	// to store ports that need to be scanned
-extern vector<int>::iterator vect_itr;	// an iterator for ports 'vector'
-extern vector<string> hosts_vect;	// to store IP addresses of hosts specified at cli
+extern vector<int>::iterator intvect_itr;	// an iterator for ports 'vector'
+extern vector<string> ips_vect;	// to store IP addresses of hosts specified at cli
+extern vector<string>::iterator strvect_itr;	// an iterator for IP containing 'vector'
 
 #endif
 
@@ -35,9 +36,12 @@ class ArgsParser {
 		void usage(FILE *);
 		void parse_args(int, char**);
 		void getports(char *);
-		void gethosts(char *);
+		void getIP(char *);
 		void parse_prefixes(char *);
-		unsigned int convert_endianness(unsigned int);
+		uint32_t convert_endianness(uint32_t);
+		uint32_t powerof2(int);
+		void print_vectelems(vector<int> &);
+		void print_vectelems(vector<string> &);
 };
 
 static struct option longopts[]  = {
