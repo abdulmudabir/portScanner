@@ -18,7 +18,7 @@ from input files, and convert the supplied IP prefixes to a list of individual I
 * can the "vector<int> ports_vect" be included in the ArgsParser class instead of being in global scope ?
 * can reduce number of variables in parse_prefixes by passing args to convert_endianness() by &
 
-# Test cases
+# Test cases for args parsing
 * need to ignore input where ports specified are 
 	** incorrect / out of range
 	** contain floating point values
@@ -36,3 +36,7 @@ from input files, and convert the supplied IP prefixes to a list of individual I
 	** reject "--prefix -127.0.0.-2/24" ( DONE, by inet_aton() )
 * "--file filename"
 	** reject file line like "159.23.1.24 	hi there 172.68.42.23" (DONE)
+* "--speedup nthreads"
+	** negative number or '0' number of threads check ? (DONE)
+	** float entered for nthreads check ? (DONE, accept it and let int round it down)
+	** string entered for nthreads check ? (DONE)

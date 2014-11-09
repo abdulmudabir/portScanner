@@ -30,6 +30,7 @@ vector<string>::iterator strvect_itr;
 /* default constructor for class ArgsParser */
 ArgsParser::ArgsParser() {
 	memset(this->filename, 0x00, sizeof(this->filename));	// null filename by default
+	this->num_threads = 0;	// 0 by default to indicate no-multi-threading	
 }
 
 /*
@@ -46,7 +47,7 @@ void ArgsParser::usage(FILE *file) {
  					"	--ip <IP address to scan>			\tScan ports on specified IP address. Eg. $ ./portScanner --ip 129.79.247.87\n"
  					"	--prefix <IP prefix to scan>			\tScan a range of IP addresses. Eg. $ ./portScanner --prefix 127.0.0.1/24\n"
  					"	--file <file name containing IP addresses to scan>\tRead specified file name that contains list of IP addresses to scan. Eg. $ ./portScanner --file ipaddresses.txt\n"
- 					"	--speedup <parallel threads to use>		\tMulti-threaded version of portScanner; specifies number of threads to be used. Eg. $ ./portScanner --speedup 5\n"
+ 					"	--speedup <parallel threads to use>		\tMulti-threaded version of portScanner; specifies number of threads to be used. Rounds down floating point numbers. Eg. $ ./portScanner --speedup 5\n"
  					"	--scan <one or more scans>			\tType of scan to be performed\n"
 			);
 }
@@ -77,6 +78,11 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
 				break;
 			case 't':
 				this->num_threads = atoi(optarg);
+				if (num_threads <= 0) {
+					fprintf(stderr, "Error: Invalid number of threads specified.\n");
+					this->usage(stderr);
+					exit(1);
+				}
 				break;
 			default:
 				this->usage(stderr);
