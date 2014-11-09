@@ -32,6 +32,7 @@ extern vector<string>::iterator strvect_itr;	// an iterator for IP containing 'v
 class ArgsParser {
 	private:
 		char filename[50];	// to store file name containing IP addresses
+		int num_threads;	// to store number of threads to run in the multi-threaded version of program
 	public:
 		ArgsParser();
 		void usage(FILE *);
@@ -41,10 +42,13 @@ class ArgsParser {
 		void getIP(char *);
 		void checkIP(char *);
 		void parse_prefixes(char *, vector<string> &);
+		void readIPfile(char *);
 		uint32_t convert_endianness(uint32_t);
 		uint32_t powerof2(int);
 		void print_vectelems(vector<int> &);
 		void print_vectelems(vector<string> &);
+		int get_threads();
+
 };
 
 static struct option longopts[]  = {

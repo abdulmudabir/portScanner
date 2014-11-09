@@ -17,5 +17,9 @@ int main(int argc, char *argv[]) {
 	cout << endl << "=============== Ports to scan ===============" << endl << endl;
 	ps_args.print_vectelems(ports_vect);
 
+	// print number of threads to run
+	cout << endl << "=============== Threads ===============" << endl << endl;
+	cout << "Number fo threads specified: " << ps_args.get_threads() << endl << endl;
+
 	return 0;
 }

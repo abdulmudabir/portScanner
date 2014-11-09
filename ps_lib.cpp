@@ -16,6 +16,7 @@
 #include <limits.h>
 #include <cmath>
 #include <algorithm>
+#include <fstream>
 
 /* recall all global variables */
 vector<int> ports_vect;
@@ -44,8 +45,8 @@ void ArgsParser::usage(FILE *file) {
  					"	--ports <ports to scan>				\tScan specified ports on IP address Eg. $ ./portScanner --ports 1,10,90-100\n"
  					"	--ip <IP address to scan>			\tScan ports on specified IP address. Eg. $ ./portScanner --ip 129.79.247.87\n"
  					"	--prefix <IP prefix to scan>			\tScan a range of IP addresses. Eg. $ ./portScanner --prefix 127.0.0.1/24\n"
- 					"	--file <file name containing IP addresses to scan>\tRead specified file name that contains list of IP addresses to scan\n"
- 					"	--speedup <parallel threads to use>		\tMulti-threaded version of portScanner; specifies number of threads to be used\n"
+ 					"	--file <file name containing IP addresses to scan>\tRead specified file name that contains list of IP addresses to scan. Eg. $ ./portScanner --file ipaddresses.txt\n"
+ 					"	--speedup <parallel threads to use>		\tMulti-threaded version of portScanner; specifies number of threads to be used. Eg. $ ./portScanner --speedup 5\n"
  					"	--scan <one or more scans>			\tType of scan to be performed\n"
 			);
 }
@@ -71,6 +72,12 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
 			case 'x':
 				this->parse_prefixes(optarg, ips_vect);
 				break;
+			case 'f':
+				this->readIPfile(optarg);
+				break;
+			case 't':
+				this->num_threads = atoi(optarg);
+				break;
 			default:
 				this->usage(stderr);
 				exit(1);
@@ -90,7 +97,7 @@ void ArgsParser::fill_resv_IPs() {
 		"203.0.113.0/24", "224.0.0.0/4", "240.0.0.0/4", "255.255.255.255/32" };
 
 	for (int i = 0; i < 16; i++) {
-		parse_prefixes(resv[i], reservedIPs_vect);	// fill each reserved IP range into reserved IPs list
+		parse_prefixes(const_char<char *>(resv[i]), reservedIPs_vect);	// fill each reserved IP range into reserved IPs list
 	}
 
 }*/
@@ -273,6 +280,32 @@ inline uint32_t ArgsParser::powerof2(int n) {
 	return ( pow(2.0, (double) n) );	// math function for a raised to b: pow(a, b)
 }
 
+/* reads and stores the set of IPs/IP prefixes contained in a text file */
+void ArgsParser::readIPfile(char *file) {
+	ifstream fin;	// input file stream
+	fin.open(file);	// open file
+	string lof;	// to grab each line from file
+	size_t slashpos;	// to grab position of "/" in IP if any
+
+	if (fin.is_open()) {	// checks if input stream is well associated with file
+		while (fin.good()) {	// no errors encountered with file stream so far
+			getline(fin, lof);
+			if ( (slashpos = lof.find("/")) != string::npos) {	// check if there's an IP prefix in file
+				this->parse_prefixes(const_cast<char *>(lof.c_str()), ips_vect);	// remove cosntness using const_cast<type>
+			} else {	// just IP not an IP prefix
+				this->getIP( const_cast<char *>( lof.c_str() ) );
+			}
+		}
+	} else {
+		fprintf(stderr, "Could not open target file: \"%s\"\n", file);
+		this->usage(stderr);
+		exit(1);
+	}
+
+
+	fin.close();	// close file finally
+}
+
 /* prints all elements found in vector<int> container passed as argument */
 void ArgsParser::print_vectelems(vector<int> &vect) {
 	for ( intvect_itr = vect.begin(); intvect_itr != vect.end(); intvect_itr++)
@@ -283,4 +316,8 @@ void ArgsParser::print_vectelems(vector<int> &vect) {
 void ArgsParser::print_vectelems(vector<string> &vect) {
 	for ( strvect_itr = vect.begin(); strvect_itr != vect.end(); strvect_itr++)
 		cout << *strvect_itr << endl;
+}
+
+int ArgsParser::get_threads() {
+	return this->num_threads;
 }

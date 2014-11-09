@@ -34,3 +34,5 @@ from input files, and convert the supplied IP prefixes to a list of individual I
 	** reject prefix 127.0.0.1/24/16 ( TO DO )
 	** reject "--ip 127.b0.4A.1" ( DONE, by gethostbyname() )
 	** reject "--prefix -127.0.0.-2/24" ( DONE, by inet_aton() )
+* "--file filename"
+	** reject file line like "159.23.1.24 	hi there 172.68.42.23" (DONE)
