@@ -39,10 +39,10 @@ void ArgsParser::usage(FILE *file) {
  	if (file == NULL)
  		file = stdout;	// set standard output as file stream by default
 
- 	fprintf(file, ".portScanner [OPTIONS] \n"
+ 	fprintf(file, "./portScanner [OPTIONS] \n"
  					"	--help						\tPrint instructions on how to run portScanner\n"
- 					"	--ports <ports to scan>				\tScan specified ports on IP address\n"
- 					"	--ip <IP address to scan>			\tScan ports on specified IP address\n"
+ 					"	--ports <ports to scan>				\tScan specified ports on IP address Eg. $ ./portScanner --ports 1,10,90-100\n"
+ 					"	--ip <IP address to scan>			\tScan ports on specified IP address. Eg. $ ./portScanner --ip 129.79.247.87\n"
  					"	--prefix <IP prefix to scan>			\tScan a range of IP addresses. Eg. $ ./portScanner --prefix 127.0.0.1/24\n"
  					"	--file <file name containing IP addresses to scan>\tRead specified file name that contains list of IP addresses to scan\n"
  					"	--speedup <parallel threads to use>		\tMulti-threaded version of portScanner; specifies number of threads to be used\n"
@@ -127,8 +127,9 @@ void ArgsParser::getIP(char *ip) {
 
 	this->checkIP(ip);	// first, check if valid IP address
 
-	if ( (hostinfo = gethostbyname(ip)) == NULL) {
-		fprintf(stderr, "Error: Host not found !\n");
+	if ( (hostinfo = gethostbyname(ip)) == NULL) {	// this check takes care of invalid input like negative IP addr octets too, weird characters in octets, among others
+		fprintf(stderr, "Error: Something's not right with the IP address/es.\n");
+		this->usage(stderr);
 		exit(1);
 	}
 

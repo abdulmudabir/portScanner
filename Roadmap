@@ -26,10 +26,11 @@ from input files, and convert the supplied IP prefixes to a list of individual I
 * have default ports set as 1-1024 if "--ports" is not specified
 * can ipAddresses.txt file contain IP prefixes too ? YES for now
 * validate correct IP and correct prefix with "--prefix" (IP check same as that for "--ip")
-	** ignore "--ip 17"
-	** ignore input like 127.2.3.54.79 (invalid coz 5 octets)
-	** ignore input like 0.1.2.3 (Invalid IP addr coz reserved)
-	** ignore IP prefix like 172.16/12
-	** ignore IANA specified reserved IP addresses
-	** ignore input like "-129.-42.8.-3" (how ?)
-	** ignore prefix 127.0.0.1/24/16
+	** reject "--ip 17" (DONE)
+	** reject input like 127.2.3.54.79 (invalid coz 5 octets) (DONE)
+	** reject IP prefix like 172.16/12 (DONE)
+	** reject input like 0.1.2.3 (Invalid IP addr coz reserved) and thus, ignore IETF & IANA specified reserved IP addresses (had to recall attempt to do this; coz list should be huge, generating it throws std::bad_alloc() error, then aborts) (NOT DONE)
+	** reject input like "-129.-42.8.-3" (DONE, gethostbyname() naturally does this)
+	** reject prefix 127.0.0.1/24/16 ( TO DO )
+	** reject "--ip 127.b0.4A.1" ( DONE, by gethostbyname() )
+	** reject "--prefix -127.0.0.-2/24" ( DONE, by inet_aton() )
