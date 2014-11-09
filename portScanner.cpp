@@ -11,11 +11,11 @@ int main(int argc, char *argv[]) {
 
 	// print IPs
 	cout << "\n"<< "=============== IPs to be scanned ===============" << endl << endl;
-	ps_args.print_vectelems(ips_vect);
+	ps_args.print_setelems(ips_set);
 
 	// print ports
 	cout << endl << "=============== Ports to scan ===============" << endl << endl;
-	ps_args.print_vectelems(ports_vect);
+	ps_args.print_setelems(ports_set);
 
 	// print number of threads to run
 	cout << endl << "=============== Threads ===============" << endl << endl;

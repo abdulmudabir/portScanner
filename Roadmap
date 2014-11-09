@@ -15,12 +15,12 @@ from input files, and convert the supplied IP prefixes to a list of individual I
 * add verbose mode ?
 
 # code refactor
-* can the "vector<int> ports_vect" be included in the ArgsParser class instead of being in global scope ?
+* can the "set<int> ports_set" be included in the ArgsParser class instead of being in global scope ?
 * can reduce number of variables in parse_prefixes by passing args to convert_endianness() by &
 
 # Test cases for cli args parsing
-* remove duplicates in all vectors
-	** test case: ./portScanner --ports 65-70,80,67-91
+* remove duplicates by using STL set containers (DONE)
+	** test case: ./portScanner --ports 65-70,80,67-9
 	** case for IPs: ./portScanner --ip 129.79.247.3 --prefix 129.79.247.87/24
 * "--ports "
 	** default ports 1-1024 if not specified (DONE)
@@ -45,4 +45,3 @@ from input files, and convert the supplied IP prefixes to a list of individual I
 	** float entered for number of threads, check ? (DONE, accept it and let int round it down)
 	** string entered for number of threads, check ? (DONE)
 * "--scan "
-	

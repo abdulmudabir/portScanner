@@ -17,13 +17,14 @@
 #include <cmath>
 #include <algorithm>
 #include <fstream>
+#include <set>
 
 /* recall all global variables */
-vector<int> ports_vect;
-vector<int>::iterator intvect_itr;
-vector<string> ips_vect;
-vector<string> reservedIPs_vect;
-vector<string>::iterator strvect_itr;
+set<int> ports_set;
+set<int>::iterator intset_itr;
+set<string> ips_set;
+set<string> reservedIPs_set;
+set<string>::iterator strset_itr;
 
 // int resv_IPcheck = 0;	// indicates whether or not IP address is checked with reserved IPs list on record
 int portsflag = 0;	// indicates whether or not ports are specified at cli
@@ -73,7 +74,7 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
 				this->getIP(optarg);
 				break;
 			case 'x':
-				this->parse_prefixes(optarg, ips_vect);
+				this->parse_prefixes(optarg, ips_set);
 				break;
 			case 'f':
 				this->readIPfile(optarg);
@@ -94,7 +95,7 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
 
  	if (portsflag == 0) {	// "--ports " were not specified, use default ports 1-1024
  		for (int i = 1; i <= 1024; i++ ) {
- 			ports_vect.push_back(i);
+ 			ports_set.insert(i);
  		}
  	}
 }
@@ -146,7 +147,7 @@ void ArgsParser::getports(char *str) {
 			string port2_str(token_str.substr(dash_pos + 1));	// string containing number following the "-"
 
 			int p;
-			if ( ( p = atoi(port2_str.c_str()) ) < 0 ) {
+			if ( ( p = atoi(port2_str.c_str()) ) < 0 ) {	// case where second port in range is negative
 				fprintf(stderr, "Error: Negative port numbers are invalid.\n");
 				this->usage(stderr);
 				exit(1);
@@ -155,10 +156,10 @@ void ArgsParser::getports(char *str) {
 			int end_port = atoi(port2_str.c_str());
 
 			for (int i = start_port; i <= end_port; i++)	// fill ports vector with all ports from the start to end of the ports range
-				ports_vect.push_back(i);
+				ports_set.insert(i);
 			
 		} else {
-			ports_vect.push_back(atoi(token));
+			ports_set.insert(atoi(token));
 		}
 	}
 }
@@ -181,7 +182,7 @@ void ArgsParser::getIP(char *ip) {
 	
 	string ip_holder(inet_ntoa(hostip.sin_addr));	// convert IP char array to string
 
-	ips_vect.push_back(ip_holder);	// add to IP kitty
+	ips_set.insert(ip_holder);	// add to IP kitty
 
 }
 
@@ -221,7 +222,7 @@ void ArgsParser::checkIP(char *ip) {
 
 }
 
-void ArgsParser::parse_prefixes(char *prefix, vector<string> &vect) {
+void ArgsParser::parse_prefixes(char *prefix, set<string> &setvar) {
 	
 	// copy "prefix" into a new variable; keep "prefix" untouched coz strtok() misbehaves
 	char prefix_cpy[strlen(prefix) + 1];
@@ -282,7 +283,7 @@ void ArgsParser::parse_prefixes(char *prefix, vector<string> &vect) {
 	memset(next_ip, 0x00, sizeof next_ip);	// zero-out IP holder initially
 	sprintf( next_ip, "%s", inet_ntoa( *(struct in_addr *) &revofmaskedrev_endn ) );
 
-	vect.push_back( (string) next_ip );	// push first IP in range to IP kitty
+	setvar.insert( (string) next_ip );	// push first IP in range to IP kitty
 
 	/* push all successively generated IP addresses in specified range to vector */
 	uint32_t loopvar = 1;
@@ -294,7 +295,7 @@ void ArgsParser::parse_prefixes(char *prefix, vector<string> &vect) {
 		revorred = convert_endianness(orred);	// reverse endianness before inet_ntoa()
 		memset(next_ip, 0x00, sizeof next_ip);	// flush buffer
 		sprintf( next_ip, "%s", inet_ntoa( *(struct in_addr *) &revorred ) );
-		vect.push_back( (string) next_ip );	// add to IP kitty
+		setvar.insert( (string) next_ip );	// add to IP kitty
 
 		loopvar++;
 	}
@@ -326,7 +327,7 @@ void ArgsParser::readIPfile(char *file) {
 		while (fin.good()) {	// no errors encountered with file stream so far
 			getline(fin, lof);
 			if ( (slashpos = lof.find("/")) != string::npos) {	// check if there's an IP prefix in file
-				this->parse_prefixes(const_cast<char *>(lof.c_str()), ips_vect);	// remove cosntness using const_cast<type>
+				this->parse_prefixes(const_cast<char *>(lof.c_str()), ips_set);	// remove cosntness using const_cast<type>
 			} else {	// just IP not an IP prefix
 				this->getIP( const_cast<char *>( lof.c_str() ) );
 			}
@@ -342,15 +343,15 @@ void ArgsParser::readIPfile(char *file) {
 }
 
 /* prints all elements found in vector<int> container passed as argument */
-void ArgsParser::print_vectelems(vector<int> &vect) {
-	for ( intvect_itr = vect.begin(); intvect_itr != vect.end(); intvect_itr++)
-		cout << *intvect_itr << endl;
+void ArgsParser::print_setelems(set<int> &setvar) {
+	for ( intset_itr = setvar.begin(); intset_itr != setvar.end(); intset_itr++)
+		cout << *intset_itr << endl;
 }
 
 /* overloaded print_vectelems() function for vector<string> */
-void ArgsParser::print_vectelems(vector<string> &vect) {
-	for ( strvect_itr = vect.begin(); strvect_itr != vect.end(); strvect_itr++)
-		cout << *strvect_itr << endl;
+void ArgsParser::print_setelems(set<string> &setvar) {
+	for ( strset_itr = setvar.begin(); strset_itr != setvar.end(); strset_itr++)
+		cout << *strset_itr << endl;
 }
 
 int ArgsParser::get_threads() {
