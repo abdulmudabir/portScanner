@@ -15,6 +15,7 @@
 #include <cstdlib>
 #include <limits.h>
 #include <cmath>
+#include <algorithm>
 
 /* recall all global variables */
 vector<int> ports_vect;
@@ -22,6 +23,8 @@ vector<int>::iterator intvect_itr;
 vector<string> ips_vect;
 vector<string> reservedIPs_vect;
 vector<string>::iterator strvect_itr;
+
+// int resv_IPcheck = 0;	// indicates whether or not IP address is checked with reserved IPs list on record
 
 /* default constructor for class ArgsParser */
 ArgsParser::ArgsParser() {
@@ -66,7 +69,7 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
 				this->getIP(optarg);
 				break;
 			case 'x':
-				this->parse_prefixes(optarg);
+				this->parse_prefixes(optarg, ips_vect);
 				break;
 			default:
 				this->usage(stderr);
@@ -74,6 +77,23 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
 		}
  	}
 }
+
+/*// make a list of all reserved IP addresses that user cannot use to port scan
+void ArgsParser::fill_resv_IPs() {
+
+	resv_IPcheck = 1;	// set flag to indicate reserved IP address is to follow
+
+	// following set of reserved IP prefixes is as per the wiki link
+	char *resv[16] = { "0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "127.0.0.0/8", 
+		"169.254.0.0/16", "172.16.0.0/12", "192.0.0.0/29", "192.0.2.0/24", 
+		"192.88.99.0/24", "192.168.0.0/16", "198.18.0.0/15", "198.51.100.0/24", 
+		"203.0.113.0/24", "224.0.0.0/4", "240.0.0.0/4", "255.255.255.255/32" };
+
+	for (int i = 0; i < 16; i++) {
+		parse_prefixes(resv[i], reservedIPs_vect);	// fill each reserved IP range into reserved IPs list
+	}
+
+}*/
 
 /*
  * getports() -> void
@@ -101,6 +121,7 @@ void ArgsParser::getports(char *str) {
 	}
 }
 
+/* parses IP address specified with "--ip" option, checks its validity */
 void ArgsParser::getIP(char *ip) {
 	struct hostent *hostinfo;	// hostent struct contains information like IP address, host name, etc.
 
@@ -121,9 +142,9 @@ void ArgsParser::getIP(char *ip) {
 
 }
 
-/* checks for
- ** valid IP address format (xxx.xxx.xxx.xxx)
- ** IETF and IANA-specified "valid unreserved IP addresses" as stated at
+/* checks if
+ ** IPv4 address is in valid format (xxx.xxx.xxx.xxx)
+ ** IP address is not an IETF and IANA-specified reserved IP addresses as stated at
  *** 	http://en.wikipedia.org/wiki/Reserved_IP_addresses
  */
 void ArgsParser::checkIP(char *ip) {
@@ -133,7 +154,11 @@ void ArgsParser::checkIP(char *ip) {
 	char delim[] = ".";
 	int count;
 
-	for ( count = 0, token = strtok(ip, delim); (count < 4 && token != NULL); (token = strtok(NULL, delim)), count++ ) {
+	// copy IP to keep it safely untouched
+	char ip_cpy[strlen(ip) + 1];
+	snprintf(ip_cpy, sizeof ip_cpy, "%s", ip);
+
+	for ( count = 0, token = strtok(ip_cpy, delim); (count < 4 && token != NULL); (token = strtok(NULL, delim)), count++ ) {
 		continue;
 	}
 
@@ -141,71 +166,19 @@ void ArgsParser::checkIP(char *ip) {
 		fprintf(stderr, "Error: Invalid IP address format. Good IP example: 129.79.247.1\n");
 		this->usage(stderr);
 		exit(1);
-	} else {	// once IP format OK, check with reserved IPs list
+	} 
 
-		vector<string> resvIP_prefixes;	// reserved IPv4 addresses container
-
-		// following set of reserved IP prefixes is as per the wiki link, add each to reserved list
-		resvIP_prefixes.push_back("0.0.0.0/8");
-		resvIP_prefixes.push_back("10.0.0.0/8");
-		resvIP_prefixes.push_back("100.64.0.0/10");
-		resvIP_prefixes.push_back("127.0.0.0/8");
-		resvIP_prefixes.push_back("169.254.0.0/16");
-		resvIP_prefixes.push_back("172.16.0.0/12");
-		resvIP_prefixes.push_back("192.0.0.0/29");
-		resvIP_prefixes.push_back("192.0.2.0/24");
-		resvIP_prefixes.push_back("192.88.99.0/24");
-		resvIP_prefixes.push_back("192.168.0.0/16");
-		resvIP_prefixes.push_back("198.18.0.0/15");
-		resvIP_prefixes.push_back("198.51.100.0/24");
-		resvIP_prefixes.push_back("203.0.113.0/24");
-		resvIP_prefixes.push_back("224.0.0.0/4");
-		resvIP_prefixes.push_back("240.0.0.0/4");
-		resvIP_prefixes.push_back("255.255.255.255/32");
-
-		for ( strvect_itr = resvIP_prefixes.begin(); strvect_itr != resvIP_prefixes.end(); strvect_itr++ ) {
-			this->fill_reservedIPs(*strvect_itr);
-		}
-		
-	}
+/*	// once IP format OK, check IP with reserved IPs list
+	if ( ( strvect_itr = find(reservedIPs_vect.begin(), reservedIPs_vect.end(), (string) ip_cpy) ) != reservedIPs_vect.end()) {	// IP found in reserved IPs list
+		fprintf(stderr, "Error: A known reserved IP address is not allowed.\n"
+			"More details on reserved IPs: http://en.wikipedia.org/wiki/Reserved_IP_addresses\n");
+		usage(stderr);
+		exit(1);
+	}	// else all OK*/
 
 }
 
-void ArgsParser::fill_reservedIPs(string str) {
-
-	// copy "string IP prefix" into a new variable; keep original string untouched coz strtok() misbehaves
-	string str_cpy(str);
-
-	char prefix[strlen(str_cpy.c_str()) + 1];
-	snprintf( prefix, (strlen(str_cpy.c_str()) + 1), "%s", str_cpy.c_str() );
-
-
-	/*char prefix_cpy[strlen(prefix) + 1];
-	snprintf(prefix_cpy, sizeof prefix_cpy, "%s", prefix);
-
-	char *token;	// to tokenize IP prefix by separating forward-slash
-	char delim[] = "/";
-	char *netw_addr = new char[INET_ADDRSTRLEN + 1];	// allocate memory to hold IP
-	char *lead_bits = new char[3];	// decimal after "/" in IP prefix cannot be more than 2 digits + 1 for null-terminator
-	int i = 0;
-
-	// separate IP from trailing bits part
-	for ( (token = strtok(prefix_cpy, delim)); (token != NULL && i < 2); (token = strtok(NULL, delim)), i++ ) {
-		switch(i) {
-			case 0:
-				snprintf(netw_addr, (strlen(token) + 1), "%s", token);
-				break;
-			case 1:
-				snprintf(lead_bits, (strlen(token) + 1), "%s", token);
-				break;
-			default:
-				break;
-		}
-	}*/
-
-}
-
-void ArgsParser::parse_prefixes(char *prefix, vector<string> &vec) {
+void ArgsParser::parse_prefixes(char *prefix, vector<string> &vect) {
 	
 	// copy "prefix" into a new variable; keep "prefix" untouched coz strtok() misbehaves
 	char prefix_cpy[strlen(prefix) + 1];
@@ -237,7 +210,12 @@ void ArgsParser::parse_prefixes(char *prefix, vector<string> &vec) {
 		exit(1);
 	}
 
-	this->checkIP(netw_addr);	// first, check if valid IP address before proceeding
+	/*// if this is reserved IP addresses prefix parsing, bypass the IP check
+	if (resv_IPcheck != 1) {
+		this->checkIP(netw_addr);
+	}*/
+
+	this->checkIP(netw_addr);	// validate IP
 
 	unsigned long uint_addr;	// to store network byte order long of string IP (long -> 4 bytes)
 	if ( (i = inet_aton(netw_addr, (struct in_addr *) &uint_addr)) < 1 ) {	// convert IP to long in network byte order
@@ -261,7 +239,7 @@ void ArgsParser::parse_prefixes(char *prefix, vector<string> &vec) {
 	memset(next_ip, 0x00, sizeof next_ip);	// zero-out IP holder initially
 	sprintf( next_ip, "%s", inet_ntoa( *(struct in_addr *) &revofmaskedrev_endn ) );
 
-	ips_vect.push_back( (string) next_ip );	// push first IP in range to IP kitty
+	vect.push_back( (string) next_ip );	// push first IP in range to IP kitty
 
 	/* push all successively generated IP addresses in specified range to vector */
 	uint32_t loopvar = 1;
@@ -273,7 +251,7 @@ void ArgsParser::parse_prefixes(char *prefix, vector<string> &vec) {
 		revorred = convert_endianness(orred);	// reverse endianness before inet_ntoa()
 		memset(next_ip, 0x00, sizeof next_ip);	// flush buffer
 		sprintf( next_ip, "%s", inet_ntoa( *(struct in_addr *) &revorred ) );
-		ips_vect.push_back( (string) next_ip );	// add to IP kitty
+		vect.push_back( (string) next_ip );	// add to IP kitty
 
 		loopvar++;
 	}

@@ -6,6 +6,7 @@
 int main(int argc, char *argv[]) {
 
 	ArgsParser ps_args;	// object to parse program arguments
+	// ps_args.fill_resv_IPs();	// keep an account of all reserved IPs that are not allowed to be scanned
 	ps_args.parse_args(argc, argv);
 
 	// print IPs

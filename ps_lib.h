@@ -35,11 +35,11 @@ class ArgsParser {
 	public:
 		ArgsParser();
 		void usage(FILE *);
+		// void fill_resv_IPs();
 		void parse_args(int, char**);
 		void getports(char *);
 		void getIP(char *);
 		void checkIP(char *);
-		void fill_reservedIPs(string);
 		void parse_prefixes(char *, vector<string> &);
 		uint32_t convert_endianness(uint32_t);
 		uint32_t powerof2(int);
