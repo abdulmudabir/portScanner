@@ -26,6 +26,7 @@ extern set<int>::iterator intvect_set;	// an iterator for ports 'vector'
 extern set<string> ips_set;	// to store IP addresses of hosts specified at cli
 extern set<string> reservedIPs_set;	// a record of all IETF & IANA specified reserved IP addresses
 extern set<string>::iterator strset_itr;	// an iterator for IP containing 'vector'
+extern set<string> scans_set;	// to store port scan types specified by user
 
 #endif
 
@@ -48,6 +49,7 @@ class ArgsParser {
 		void print_setelems(set<int> &);
 		void print_setelems(set<string> &);
 		int get_threads();
+		void parse_scans(char **);
 
 };
 

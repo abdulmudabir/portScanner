@@ -17,6 +17,7 @@ from input files, and convert the supplied IP prefixes to a list of individual I
 # code refactor
 * can the "set<int> ports_set" be included in the ArgsParser class instead of being in global scope ?
 * can reduce number of variables in parse_prefixes by passing args to convert_endianness() by &
+* use enums or some data structure for scans
 
 # Test cases for cli args parsing
 * remove duplicates by using STL set containers (DONE)
@@ -45,3 +46,6 @@ from input files, and convert the supplied IP prefixes to a list of individual I
 	** float entered for number of threads, check ? (DONE, accept it and let int round it down)
 	** string entered for number of threads, check ? (DONE)
 * "--scan "
+	** reject input "--scan hello" (DONE)
+	** reject input "--scan SYN XMAS2014 FIN" (DONE)
+	** accept lowercase scan types "--scan syn xmas NULL" (DONE)

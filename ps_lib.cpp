@@ -12,6 +12,7 @@
 #include <iostream>
 #include <cstdio>
 #include <cstring>
+#include <strings.h>
 #include <cstdlib>
 #include <limits.h>
 #include <cmath>
@@ -25,6 +26,7 @@ set<int>::iterator intset_itr;
 set<string> ips_set;
 set<string> reservedIPs_set;
 set<string>::iterator strset_itr;
+set<string> scans_set;
 
 // int resv_IPcheck = 0;	// indicates whether or not IP address is checked with reserved IPs list on record
 int portsflag = 0;	// indicates whether or not ports are specified at cli
@@ -50,7 +52,7 @@ void ArgsParser::usage(FILE *file) {
  					"	--prefix <IP prefix to scan>			\tScan a range of IP addresses. Eg. $ ./portScanner --prefix 127.0.0.1/24\n"
  					"	--file <file name containing IP addresses to scan>\tRead specified file name that contains list of IP addresses to scan. Eg. $ ./portScanner --file ipaddresses.txt\n"
  					"	--speedup <parallel threads to use>		\tMulti-threaded version of portScanner; specifies number of threads to be used. Rounds down floating point numbers. Eg. $ ./portScanner --speedup 5\n"
- 					"	--scan <one or more scans>			\tType of scan to be performed\n"
+ 					"	--scan <one or more scans>			\tType of scan to be performed. Eg. $ ./portScanner --scan SYN XMAS\n"
 			);
 }
 
@@ -86,6 +88,9 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
 					this->usage(stderr);
 					exit(1);
 				}
+				break;
+			case 's':
+				this->parse_scans(argv);
 				break;
 			default:
 				this->usage(stderr);
@@ -171,7 +176,7 @@ void ArgsParser::getIP(char *ip) {
 	this->checkIP(ip);	// first, check if valid IP address
 
 	if ( (hostinfo = gethostbyname(ip)) == NULL) {	// this check takes care of invalid input like negative IP addr octets too, weird characters in octets, among others
-		fprintf(stderr, "Error: Something's not right with the IP address/es.\n");
+		fprintf(stderr, "Error: Something's not right with the IP addresses.\n");
 		this->usage(stderr);
 		exit(1);
 	}
@@ -340,6 +345,33 @@ void ArgsParser::readIPfile(char *file) {
 
 
 	fin.close();	// close file finally
+}
+
+void ArgsParser::parse_scans(char *argv[]) {
+
+	const char *scans[6] = { "SYN", "NULL", "FIN", "XMAS", "ACK", "UDP" };
+
+	argv += optind - 1;	// point argv to scan types
+	while (argv[0] != 0x00) {	// end of scan types specified
+		int i;
+		for (i = 0; i < 6; i++) {	// check user input scan type with known scan types
+			if (strcasecmp(argv[0], scans[i]) == 0)	 {	// match found; ignore case while comparing
+				break;
+			} else if ( (i == 5) && (strcasecmp(argv[0], scans[i]) != 0) ) {
+				fprintf(stderr, "Error: Unknown scan type specified.\n");
+				this->usage(stderr);
+				scans_set.clear();	// ignore "--scan " input completely
+				exit(1);
+			}
+		}
+		
+		if (i != 6) {	// "i = 6" only if no match found
+			scans_set.insert( (string) argv[0] );	// record scan type
+		}
+
+		argv++;	// point to next command-line argument
+	}
+
 }
 
 /* prints all elements found in vector<int> container passed as argument */

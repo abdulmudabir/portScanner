@@ -21,5 +21,10 @@ int main(int argc, char *argv[]) {
 	cout << endl << "=============== Threads ===============" << endl << endl;
 	cout << "Number of threads specified: " << ps_args.get_threads() << endl << endl;
 
+	// print type/s of scans specified
+	cout << endl << "=============== Scan types ===============" << endl << endl;
+	ps_args.print_setelems(scans_set);
+	cout << endl;
+
 	return 0;
 }
