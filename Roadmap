@@ -25,6 +25,11 @@ from input files, and convert the supplied IP prefixes to a list of individual I
 	** contain chars other than ",-"
 * have default ports set as 1-1024 if "--ports" is not specified
 * can ipAddresses.txt file contain IP prefixes too ? YES for now
-* $ ./portScanner --ip 17 works but it shouldn't; produces IP: 0.0.0.17; REJECT such input
-	** ignore input like 0.1.2.3 (Invalid IP addr)
 * validate correct IP and correct prefix with "--prefix" (IP check same as that for "--ip")
+	** ignore "--ip 17"
+	** ignore input like 127.2.3.54.79 (invalid coz 5 octets)
+	** ignore input like 0.1.2.3 (Invalid IP addr coz reserved)
+	** ignore IP prefix like 172.16/12
+	** ignore IANA specified reserved IP addresses
+	** ignore input like "-129.-42.8.-3" (how ?)
+	** ignore prefix 127.0.0.1/24/16

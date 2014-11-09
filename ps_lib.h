@@ -24,6 +24,7 @@ using namespace std;
 extern vector<int> ports_vect;	// to store ports that need to be scanned
 extern vector<int>::iterator intvect_itr;	// an iterator for ports 'vector'
 extern vector<string> ips_vect;	// to store IP addresses of hosts specified at cli
+extern vector<string> reservedIPs_vect;	// a record of all IETF & IANA specified reserved IP addresses
 extern vector<string>::iterator strvect_itr;	// an iterator for IP containing 'vector'
 
 #endif
@@ -37,7 +38,9 @@ class ArgsParser {
 		void parse_args(int, char**);
 		void getports(char *);
 		void getIP(char *);
-		void parse_prefixes(char *);
+		void checkIP(char *);
+		void fill_reservedIPs(string);
+		void parse_prefixes(char *, vector<string> &);
 		uint32_t convert_endianness(uint32_t);
 		uint32_t powerof2(int);
 		void print_vectelems(vector<int> &);
