@@ -18,13 +18,17 @@ from input files, and convert the supplied IP prefixes to a list of individual I
 * can the "vector<int> ports_vect" be included in the ArgsParser class instead of being in global scope ?
 * can reduce number of variables in parse_prefixes by passing args to convert_endianness() by &
 
-# Test cases for args parsing
-* need to ignore input where ports specified are 
-	** incorrect / out of range
-	** contain floating point values
-	** contain chars other than ",-"
-* have default ports set as 1-1024 if "--ports" is not specified
-* can ipAddresses.txt file contain IP prefixes too ? YES for now
+# Test cases for cli args parsing
+* remove duplicates in all vectors
+	** test case: ./portScanner --ports 65-70,80,67-91
+	** case for IPs: ./portScanner --ip 129.79.247.3 --prefix 129.79.247.87/24
+* "--ports "
+	** default ports 1-1024 if not specified (DONE)
+	** reject input "--ports -23" (DONE)
+	** reject input "--ports 1-10,-42,90-100" (DONE)
+	** reject input "--ports -27-40" (DONE)
+	** reject input "--ports 12--90" (DONE)
+* can ipAddresses.txt file contain IP prefixes too ? (yes, DONE)
 * validate correct IP and correct prefix with "--prefix" (IP check same as that for "--ip")
 	** reject "--ip 17" (DONE)
 	** reject input like 127.2.3.54.79 (invalid coz 5 octets) (DONE)
@@ -36,7 +40,9 @@ from input files, and convert the supplied IP prefixes to a list of individual I
 	** reject "--prefix -127.0.0.-2/24" ( DONE, by inet_aton() )
 * "--file filename"
 	** reject file line like "159.23.1.24 	hi there 172.68.42.23" (DONE)
-* "--speedup nthreads"
+* "--speedup "
 	** negative number or '0' number of threads check ? (DONE)
-	** float entered for nthreads check ? (DONE, accept it and let int round it down)
-	** string entered for nthreads check ? (DONE)
+	** float entered for number of threads, check ? (DONE, accept it and let int round it down)
+	** string entered for number of threads, check ? (DONE)
+* "--scan "
+	

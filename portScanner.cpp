@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
 
 	// print number of threads to run
 	cout << endl << "=============== Threads ===============" << endl << endl;
-	cout << "Number fo threads specified: " << ps_args.get_threads() << endl << endl;
+	cout << "Number of threads specified: " << ps_args.get_threads() << endl << endl;
 
 	return 0;
 }

@@ -26,6 +26,7 @@ vector<string> reservedIPs_vect;
 vector<string>::iterator strvect_itr;
 
 // int resv_IPcheck = 0;	// indicates whether or not IP address is checked with reserved IPs list on record
+int portsflag = 0;	// indicates whether or not ports are specified at cli
 
 /* default constructor for class ArgsParser */
 ArgsParser::ArgsParser() {
@@ -65,6 +66,7 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
 				this->usage(stdout);
 				exit(1);
 			case 'p':
+				portsflag = 1;	// indicate "--ports " was specified at cli
 				this->getports(optarg);
 				break;
 			case 'i':
@@ -88,6 +90,12 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
 				this->usage(stderr);
 				exit(1);
 		}
+ 	}
+
+ 	if (portsflag == 0) {	// "--ports " were not specified, use default ports 1-1024
+ 		for (int i = 1; i <= 1024; i++ ) {
+ 			ports_vect.push_back(i);
+ 		}
  	}
 }
 
@@ -116,13 +124,34 @@ void ArgsParser::getports(char *str) {
 	char delim[] = ",";	// tokenize char array on ","
 	char *token;	// token holder
 
-	for ( (token = strtok(str, delim)); token; token = strtok(NULL, delim) ) {	// tokenize until all tokens are retrieved
+	// make a copy of original string argument
+	char str_cpy[strlen(str) + 1];
+	snprintf(str_cpy, (strlen(str) + 1), "%s", str);
+
+	for ( (token = strtok(str_cpy, delim)); token; token = strtok(NULL, delim) ) {	// tokenize until all tokens are retrieved
 		string token_str(token);	// convert to type: string
 		size_t dash_pos;	// holds index of the "-" if it is present in a token
 		if ( ( dash_pos = token_str.find("-") ) != string::npos ) {	// check if "-" is present in token
+			
 			string port1_str(token_str.substr(0, dash_pos));	// string containing number upto "-"
+			
+			if (port1_str.empty()) {	// case when a negative port number was specified; REJECT such negative port numbers
+				fprintf(stderr, "Error: Negative port numbers are invalid.\n");
+				this->usage(stderr);
+				exit(1);
+			}
+
 			int start_port = atoi(port1_str.c_str());	// convert to integer
+
 			string port2_str(token_str.substr(dash_pos + 1));	// string containing number following the "-"
+
+			int p;
+			if ( ( p = atoi(port2_str.c_str()) ) < 0 ) {
+				fprintf(stderr, "Error: Negative port numbers are invalid.\n");
+				this->usage(stderr);
+				exit(1);
+			}
+
 			int end_port = atoi(port2_str.c_str());
 
 			for (int i = start_port; i <= end_port; i++)	// fill ports vector with all ports from the start to end of the ports range
