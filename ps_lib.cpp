@@ -227,6 +227,10 @@ void ArgsParser::checkIP(char *ip) {
 
 }
 
+/*
+ * parses an IP prefix string in format "xxx.xxx.xxx.xxx/xx" (networkID/prefix)
+ * takes a set container as argument to unique record all IPs in range into the container
+ */
 void ArgsParser::parse_prefixes(char *prefix, set<string> &setvar) {
 	
 	// copy "prefix" into a new variable; keep "prefix" untouched coz strtok() misbehaves
@@ -347,6 +351,10 @@ void ArgsParser::readIPfile(char *file) {
 	fin.close();	// close file finally
 }
 
+/*
+ * parses the type/s of scans specified by user at command line after "--scan"
+ * scan types are case-insensitive
+ */
 void ArgsParser::parse_scans(char *argv[]) {
 
 	const char *scans[6] = { "SYN", "NULL", "FIN", "XMAS", "ACK", "UDP" };
