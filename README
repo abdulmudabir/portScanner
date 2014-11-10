@@ -64,3 +64,4 @@ $ make
 	** accept lowercase scan types "--scan syn xmas NULL" (DONE)
 	** reject input: ./portScanner --ports 1,2 --ip 74.125.225.68 --speedup 5 --scan "UDP SYN" (DONE)
 	** reject input: ./portScanner --ports 1,2 --ip 74.125.225.68 --speedup 5 --scan UDP, SYN (DONE)
+	** fix case: if "--scan UDP XMAS" is not at the end, input is not accepted (NOT DONE)
