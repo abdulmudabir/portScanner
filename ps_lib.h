@@ -49,7 +49,7 @@ class ArgsParser {
 		void print_setelems(set<int> &);
 		void print_setelems(set<string> &);
 		int get_threads();
-		void parse_scans(char **);
+		void parse_scans(int, char **);
 
 };
 

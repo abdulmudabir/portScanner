@@ -90,7 +90,7 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
 				}
 				break;
 			case 's':
-				this->parse_scans(argv);
+				this->parse_scans(argc, argv);
 				break;
 			default:
 				this->usage(stderr);
@@ -355,30 +355,43 @@ void ArgsParser::readIPfile(char *file) {
  * parses the type/s of scans specified by user at command line after "--scan"
  * scan types are case-insensitive
  */
-void ArgsParser::parse_scans(char *argv[]) {
+void ArgsParser::parse_scans(int argc, char *argv[]) {
 
 	const char *scans[6] = { "SYN", "NULL", "FIN", "XMAS", "ACK", "UDP" };
 
-	argv += optind - 1;	// point argv to scan types
-	while (argv[0] != 0x00) {	// end of scan types specified
-		int i;
-		for (i = 0; i < 6; i++) {	// check user input scan type with known scan types
-			if (strcasecmp(argv[0], scans[i]) == 0)	 {	// match found; ignore case while comparing
-				break;
-			} else if ( (i == 5) && (strcasecmp(argv[0], scans[i]) != 0) ) {
-				fprintf(stderr, "Error: Unknown scan type specified.\n");
-				this->usage(stderr);
-				scans_set.clear();	// ignore "--scan " input completely
-				exit(1);
-			}
+	int i;
+	for (i = 1; i < argc; i++) {	// look for "--scan" string in each cli argument except the first
+		if (strcmp(argv[i], "--scan") == 0) {
+			break;
 		}
-		
-		if (i != 6) {	// "i = 6" only if no match found
-			scans_set.insert( (string) argv[0] );	// record scan type
-		}
-
-		argv++;	// point to next command-line argument
 	}
+
+	/* go through "scan types" entries following "--scan " but only until 
+	 * either "no string" is found or another program option is found, 
+	 * e.g. "--scan SYN NULL --speedup 10"
+	 */
+	 while ( (*argv[i + 1] != '-') && (*argv[i + 1] != 0x0) ) {
+
+	 	int j;
+	 	for (j = 0; j < 6; j++) {	// check with each known scan type
+	 		if ( strcasecmp(argv[i + 1], scans[j]) != 0 )
+	 			continue;
+	 		else {
+	 			scans_set.insert(argv[i + 1]);	// if scan type match found, make note of that scan type
+	 			break;
+	 		}
+	 			
+	 	}
+
+	 	if (j == 6) {	// specified scan type unknown, throw Error
+	 		fprintf(stderr, "Error: Unknown scan type specified.\n");
+	 		this->usage(stderr);
+	 		scans_set.clear();	// ignore "--scan " input completely
+			exit(1);
+	 	}
+
+	 	i++;
+	 }
 
 }
 

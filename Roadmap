@@ -18,7 +18,7 @@ from input files, and convert the supplied IP prefixes to a list of individual I
 # For the final Submission
 ==========================================================================================
 
-	• scan one port using SYN scan (figure out how to construct packets to scan ports with) 
+	• scan one port using SYN scan (figure out how to construct packets to scan ports with)
 	• scan using other scan technique (follow each scan type's procedure coz they differ)
 	• creating and using raw sockets
 	• how to scan UDP sockets
