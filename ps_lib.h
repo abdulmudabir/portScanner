@@ -4,6 +4,8 @@
 
 // standard libraries
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <string>
 #include <getopt.h>
 #include <sys/types.h>
@@ -50,7 +52,6 @@ class ArgsParser {
 		void print_setelems(set<string> &);
 		int get_threads();
 		void parse_scans(int, char **);
-
 };
 
 static struct option longopts[]  = {

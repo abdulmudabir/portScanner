@@ -11,9 +11,7 @@
 // standard libraries
 #include <iostream>
 #include <cstdio>
-#include <cstring>
 #include <strings.h>
-#include <cstdlib>
 #include <limits.h>
 #include <cmath>
 #include <algorithm>
