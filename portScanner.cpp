@@ -8,11 +8,11 @@
 int main(int argc, char *argv[]) {
 
 	/* display start time */
-	time_t timevar;	// for storing time values at beginning of program execution
+	time_t init_time, fin_time;	// for storing time values at beginning of program execution
 	struct tm *abouttime;	// store current time details in this structure
 	char buffer[100];	// string to display to stdout
-	time(&timevar);	// get current time
-	abouttime = localtime(&timevar);
+	time(&init_time);	// get current time
+	abouttime = localtime(&init_time);
 	strftime(buffer, sizeof buffer, "\nportScanner started at %F %T %Z.", abouttime);
 	cout << buffer << endl;
 
@@ -38,11 +38,11 @@ int main(int argc, char *argv[]) {
 	cout << endl;
 
 	/* display end time */
-	time(&timevar);	// get time at end
-	abouttime = localtime(&timevar);
+	time(&fin_time);	// get time at end
+	abouttime = localtime(&fin_time);
 	memset(buffer, 0x0, sizeof buffer);	// flush out char buffer
 	strftime(buffer, sizeof buffer, "portScanner ended at %F %T %Z.", abouttime);
-	fprintf( stdout, "%s Scan took %.3f seconds.\n\n", buffer, difftime(mktime(abouttime), timevar) );	// output difference in start and end time too
+	fprintf( stdout, "%s Scan took %.3f seconds.\n\n", buffer, difftime(fin_time, init_time) );	// output difference in start and end time too
 
 	return 0;
 }
