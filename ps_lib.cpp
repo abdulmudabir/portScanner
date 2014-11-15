@@ -333,7 +333,9 @@ void ArgsParser::readIPfile(char *file) {
 	if (fin.is_open()) {	// checks if input stream is well associated with file
 		while (fin.good()) {	// no errors encountered with file stream so far
 			getline(fin, lof);
-			if ( (slashpos = lof.find("/")) != string::npos) {	// check if there's an IP prefix in file
+			if ( strcmp(lof.c_str(), "") == 0) {
+				continue;
+			} else if ( (slashpos = lof.find("/")) != string::npos) {	// check if there's an IP prefix in file
 				this->parse_prefixes(const_cast<char *>(lof.c_str()), ips_set);	// remove cosntness using const_cast<type>
 			} else {	// just IP not an IP prefix
 				this->getIP( const_cast<char *>( lof.c_str() ) );

@@ -54,6 +54,7 @@ $ make
 	** reject input: ./portScanner --ports 1,2,3 --ip "74.125.225.68" --speedup 5 ( TO DO )
 * "--file filename"
 	** reject file line like "159.23.1.24 	hi there 172.68.42.23" (DONE)
+	** ignore new lines in 'filename' but consider other IPs in it (NOT DONE)
 * "--speedup "
 	** negative number or '0' number of threads check ? (DONE)
 	** float entered for number of threads, check ? (DONE, accept it and let int round it down)
