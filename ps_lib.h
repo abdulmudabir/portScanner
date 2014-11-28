@@ -54,15 +54,4 @@ class ArgsParser {
 		void parse_scans(int, char **);
 };
 
-static struct option longopts[]  = {
-	{"help", 	no_argument, 		0, 	'h'},
-	{"ports", 	required_argument, 	0, 	'p'},
-	{"ip", 		required_argument, 	0, 	'i'},
-	{"prefix", 	required_argument, 	0, 	'x'},
-	{"file", 	required_argument, 	0, 	'f'},
-	{"speedup", required_argument, 	0, 	't'},
-	{"scan", 	required_argument, 	0, 	's'},
-	{0, 0, 0, 0}
-};
-
 #endif

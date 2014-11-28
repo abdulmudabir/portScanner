@@ -41,6 +41,7 @@ $ make
 	** reject input "--ports -27-40" (DONE)
 	** reject input "--ports 12--90" (DONE)
 	** reject input: ./portScanner --ports 1, 2, 3 - 1000 --ip 74.125.225.68 (NOT DONE)
+	** reject input: ./portScanner --port SYN (NOT DONE)
 * can ipAddresses.txt file contain IP prefixes too ? (yes, DONE)
 * validate correct IP and correct prefix with "--prefix" (IP check same as that for "--ip")
 	** reject "--ip 17" (DONE)

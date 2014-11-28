@@ -48,8 +48,10 @@ void ArgsParser::usage(FILE *file) {
  					"	--ports <ports to scan>				\tScan specified ports on IP address Eg. $ ./portScanner --ports 1,10,90-100\n"
  					"	--ip <IP address to scan>			\tScan ports on specified IP address. Eg. $ ./portScanner --ip 129.79.247.87\n"
  					"	--prefix <IP prefix to scan>			\tScan a range of IP addresses. Eg. $ ./portScanner --prefix 127.0.0.1/24\n"
- 					"	--file <file name containing IP addresses to scan>\tRead specified file name that contains list of IP addresses to scan. Eg. $ ./portScanner --file ipaddresses.txt\n"
- 					"	--speedup <parallel threads to use>		\tMulti-threaded version of portScanner; specifies number of threads to be used. Rounds down floating point numbers. Eg. $ ./portScanner --speedup 5\n"
+ 					"	--file <file name containing IP addresses to scan>\tRead specified file name that contains list of IP addresses to scan.\n"
+ 					"								Eg. $ ./portScanner --file ipaddresses.txt\n"
+ 					"	--speedup <parallel threads to use>		\tMulti-threaded version of portScanner; specifies number of threads to be used. \n"
+ 					"								Rounds down floating point numbers. Eg. $ ./portScanner --speedup 5\n"
  					"	--scan <one or more scans>			\tType of scan to be performed. Eg. $ ./portScanner --scan SYN XMAS\n"
 			);
 }
@@ -59,13 +61,26 @@ void ArgsParser::usage(FILE *file) {
  * makes sense of each command line argument specified beside the program
  */
 void ArgsParser::parse_args(int argc, char *argv[]) {
+ 	
+	/* all long options that can be specified with ./portScanner */
+ 	struct option longopts[]  = {
+		{"help", 	no_argument, 		0, 	'h'},
+		{"ports", 	required_argument, 	0, 	'p'},
+		{"ip", 		required_argument, 	0, 	'i'},
+		{"prefix", 	required_argument, 	0, 	'x'},
+		{"file", 	required_argument, 	0, 	'f'},
+		{"speedup", required_argument, 	0, 	't'},
+		{"scan", 	required_argument, 	0, 	's'},
+		{0, 0, 0, 0}
+	};
+
  	int g;	// to grab return value of getopt_long()
  	int longindex = 0;	// array index of struct longopts set by getopt_long()
  	while ( (g = getopt_long(argc, argv, "", longopts, &longindex)) != -1 ) {
  		switch(g) {
 			case 'h':
 				this->usage(stdout);
-				exit(1);
+				exit(0);
 			case 'p':
 				portsflag = 1;	// indicate "--ports " was specified at cli
 				this->getports(optarg);
@@ -181,7 +196,7 @@ void ArgsParser::getIP(char *ip) {
 
 	struct sockaddr_in hostip;	// to store IP address data structure
 	hostip.sin_family = AF_INET;	// set Internet Addressing as IP family type
-	memcpy( (char *) &hostip.sin_addr.s_addr, (char *) hostinfo->h_addr_list[0], strlen((char *) hostinfo->h_addr_list) );	// register IP address of host specified at cli
+	memcpy( (char *) &hostip.sin_addr.s_addr, hostinfo->h_addr_list[0], strlen( hostinfo->h_addr_list[0]) );	// register IP address of host specified at cli
 	
 	string ip_holder(inet_ntoa(hostip.sin_addr));	// convert IP char array to string
 
