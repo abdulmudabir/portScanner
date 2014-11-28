@@ -196,7 +196,7 @@ void ArgsParser::getIP(char *ip) {
 
 	struct sockaddr_in hostip;	// to store IP address data structure
 	hostip.sin_family = AF_INET;	// set Internet Addressing as IP family type
-	memcpy( (char *) &hostip.sin_addr.s_addr, hostinfo->h_addr_list[0], strlen( hostinfo->h_addr_list[0]) );	// register IP address of host specified at cli
+	memcpy( (char *) &hostip.sin_addr.s_addr, (char *) hostinfo->h_addr, hostinfo->h_length );	// register IP address of host specified at cli
 	
 	string ip_holder(inet_ntoa(hostip.sin_addr));	// convert IP char array to string
 
