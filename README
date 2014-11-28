@@ -53,6 +53,7 @@ $ make
 	** reject "--ip 127.b0.4A.1" ( DONE, by gethostbyname() )
 	** reject "--prefix -127.0.0.-2/24" ( DONE, by inet_aton() )
 	** reject input: ./portScanner --ports 1,2,3 --ip "74.125.225.68" --speedup 5 ( TO DO )
+	** allow: ./portScanner --ip localhost --ports 23,47,2 (DONE)
 * "--file filename"
 	** reject file line like "159.23.1.24 	hi there 172.68.42.23" (DONE)
 	** ignore new lines in 'filename' but consider other IPs in it (NOT DONE)

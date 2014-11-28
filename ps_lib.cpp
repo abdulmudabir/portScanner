@@ -11,7 +11,6 @@
 // standard libraries
 #include <iostream>
 #include <cstdio>
-#include <strings.h>
 #include <limits.h>
 #include <cmath>
 #include <algorithm>
@@ -52,7 +51,8 @@ void ArgsParser::usage(FILE *file) {
  					"								Eg. $ ./portScanner --file ipaddresses.txt\n"
  					"	--speedup <parallel threads to use>		\tMulti-threaded version of portScanner; specifies number of threads to be used. \n"
  					"								Rounds down floating point numbers. Eg. $ ./portScanner --speedup 5\n"
- 					"	--scan <one or more scans>			\tType of scan to be performed. Eg. $ ./portScanner --scan SYN XMAS\n"
+ 					"	--scan <one or more scans>			\tType of scan to be performed. Known scan types are SYN, NULL, FIN, XMAS, ACK, UDP.\n"
+ 					"								Eg. $ ./portScanner --scan SYN XMAS FIN\n"
 			);
 }
 
@@ -211,7 +211,11 @@ void ArgsParser::getIP(char *ip) {
  */
 void ArgsParser::checkIP(char *ip) {
 
-	// CHECK FOR VALID IP ADDRESS FORMAT FIRST E.G. IGNORE IP ADDRESS: "18" OR "12.172", ETC.
+	if (strcmp(ip, "localhost") == 0) {	// "localhost" needs to be considered as a valid reference to IP 127.0.0.1
+		return;
+	}
+
+	// now check for valid ip address format first e.g. ignore ip address: "18" or "12.172", etc.
 	char *token;
 	char delim[] = ".";
 	int count;
