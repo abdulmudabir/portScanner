@@ -26,7 +26,7 @@ set<string>::iterator strset_itr;
 set<string> scans_set;
 
 // int resv_IPcheck = 0;	// indicates whether or not IP address is checked with reserved IPs list on record
-int portsflag = 0;	// indicates whether or not ports are specified at cli
+const char *scans[6] = { "SYN", "NULL", "FIN", "XMAS", "ACK", "UDP" };	// list of all scan types
 
 /* default constructor for class ArgsParser */
 ArgsParser::ArgsParser() {
@@ -82,7 +82,6 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
 				this->usage(stdout);
 				exit(0);
 			case 'p':
-				portsflag = 1;	// indicate "--ports " was specified at cli
 				this->getports(optarg);
 				break;
 			case 'i':
@@ -111,9 +110,15 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
 		}
  	}
 
- 	if (portsflag == 0) {	// "--ports " were not specified, use default ports 1-1024
+ 	if ( ports_set.empty() ) {	// if no ports were entered i.e. "--ports " was not a cli argument, use default ports 1-1024
  		for (int i = 1; i <= 1024; i++ ) {
  			ports_set.insert(i);
+ 		}
+ 	}
+
+ 	if ( scans_set.empty() ) {	// similarly, if no scan types were specified at cli, then add all scan types to the kitty
+ 		for (int i = 0; i < 6; i++) {
+ 			scans_set.insert(scans[i]);
  		}
  	}
 }
@@ -155,12 +160,24 @@ void ArgsParser::getports(char *str) {
 			string port1_str(token_str.substr(0, dash_pos));	// string containing number upto "-"
 			
 			if (port1_str.empty()) {	// case when a negative port number was specified; REJECT such negative port numbers
-				fprintf(stderr, "Error: Negative port numbers are invalid.\n");
+				fprintf(stderr, "Error: Negative port numbers are invalid. Ports only in range of 1-1024 are allowed.\n");
 				this->usage(stderr);
 				exit(1);
 			}
 
 			int start_port = atoi(port1_str.c_str());	// convert to integer
+
+			if (start_port == 0) {
+				fprintf(stderr, "Error: Port# 0 not allowed. Ports only in range of 1-1024 are allowed.\n");
+				this->usage(stderr);
+				exit(1);
+			}
+
+			if (start_port > 1024) {
+				fprintf(stderr, "Error: Ports greater than 1024 not allowed. Acceptable port range of 1-1024.\n");
+				this->usage(stderr);
+				exit(1);
+			}
 
 			string port2_str(token_str.substr(dash_pos + 1));	// string containing number following the "-"
 
@@ -173,10 +190,29 @@ void ArgsParser::getports(char *str) {
 
 			int end_port = atoi(port2_str.c_str());
 
+			if (end_port > 1024) {
+				fprintf(stderr, "Error: Ports greater than 1024 not allowed. Acceptable port range of 1-1024.\n");
+				this->usage(stderr);
+				exit(1);
+			}
+
+			if (start_port > end_port) {	// e.g. "--ports 23-0,47"
+				fprintf(stderr, "Error: Invalid range of ports.\n");
+				this->usage(stderr);
+				exit(1);
+			}
+
 			for (int i = start_port; i <= end_port; i++)	// fill ports vector with all ports from the start to end of the ports range
 				ports_set.insert(i);
 			
 		} else {
+			int p;
+			if ( (p = atoi(token)) == 0 || p > 1024 ) {
+				fprintf(stderr, "Error: Unacceptable port number specified. Acceptable port range of 1-1024.\n");
+				this->usage(stderr);
+				exit(1);
+			}
+
 			ports_set.insert(atoi(token));
 		}
 	}
@@ -257,7 +293,7 @@ void ArgsParser::parse_prefixes(char *prefix, set<string> &setvar) {
 	char *token;	// to tokenize IP prefix by separating forward-slash
 	char delim[] = "/";
 	char *netw_addr = new char[INET_ADDRSTRLEN + 1];	// allocate memory to hold IP
-	char *lead_bits = new char[3];	// decimal after "/" in IP prefix cannot be more than 2 digits + 1 for null-terminator
+	char *lead_bits = new char[3];	// number after "/" in IP prefix cannot be more than 2 digits + 1 for null-terminator
 	int i = 0;
 
 	/* separate IP from trailing bits part */
@@ -376,8 +412,6 @@ void ArgsParser::readIPfile(char *file) {
  */
 void ArgsParser::parse_scans(int argc, char *argv[]) {
 
-	const char *scans[6] = { "SYN", "NULL", "FIN", "XMAS", "ACK", "UDP" };
-
 	int i;
 	for (i = 1; i < argc; i++) {	// look for "--scan" string in each cli argument except the first
 		if (strcmp(argv[i], "--scan") == 0) {
@@ -386,10 +420,11 @@ void ArgsParser::parse_scans(int argc, char *argv[]) {
 	}
 
 	/* go through "scan types" entries following "--scan " but only until 
-	 * either "no string" is found or another program option is found, 
+	 * either the end of all arguments is reached or another program option is found, 
+	 * e.g. "--scan XMAS FIN"
 	 * e.g. "--scan SYN NULL --speedup 10"
 	 */
-	 while ( (*argv[i + 1] != '-') && (*argv[i + 1] != 0x0) ) {
+	 while ( ((i + 1) < argc) && (*argv[i + 1] != '-') ) {
 
 	 	int j;
 	 	for (j = 0; j < 6; j++) {	// check with each known scan type
@@ -399,7 +434,6 @@ void ArgsParser::parse_scans(int argc, char *argv[]) {
 	 			scans_set.insert(argv[i + 1]);	// if scan type match found, make note of that scan type
 	 			break;
 	 		}
-	 			
 	 	}
 
 	 	if (j == 6) {	// specified scan type unknown, throw Error
@@ -410,6 +444,7 @@ void ArgsParser::parse_scans(int argc, char *argv[]) {
 	 	}
 
 	 	i++;
+
 	 }
 
 }

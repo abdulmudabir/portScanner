@@ -1,6 +1,6 @@
 
-#ifndef _PS_NETW_H
-#define _PS_NETW_H
+#ifndef _PS_NETW_HPP_
+#define _PS_NETW_HPP_
 
 // define tcp header structure
 typedef struct {	// for now, copied as is from /usr/include/netinet/tcp.h
