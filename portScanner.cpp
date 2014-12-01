@@ -1,5 +1,5 @@
 
-#include "ps_lib.h"
+#include "ps_lib.hpp"
 
 // standard libraries
 #include <iostream>

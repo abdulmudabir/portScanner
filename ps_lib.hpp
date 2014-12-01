@@ -1,6 +1,6 @@
 
-#ifndef _PS_LIB_H_
-#define _PS_LIB_H_
+#ifndef _PS_LIB_HPP_
+#define _PS_LIB_HPP_
 
 // standard libraries
 #include <cstdio>
