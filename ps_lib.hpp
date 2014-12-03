@@ -24,10 +24,8 @@ using namespace std;
 #define vars
 
 extern set<int> ports_set;	// to store ports that need to be scanned
-extern set<int>::iterator intvect_set;	// an iterator for ports 'vector'
 extern set<string> ips_set;	// to store IP addresses of hosts specified at cli
-extern set<string> reservedIPs_set;	// a record of all IETF & IANA specified reserved IP addresses
-extern set<string>::iterator strset_itr;	// an iterator for IP containing 'vector'
+// extern set<string> reservedIPs_set;	// a record of all IETF & IANA specified reserved IP addresses
 extern set<string> scans_set;	// to store port scan types specified by user
 
 #endif

@@ -1,5 +1,6 @@
 
 #include "ps_lib.hpp"
+#include "ps_netw.hpp"
 
 // standard libraries
 #include <iostream>
@@ -36,6 +37,11 @@ int main(int argc, char *argv[]) {
 	cout << endl << "=============== Scan types ===============" << endl << endl;
 	ps_args.print_setelems(scans_set);
 	cout << endl;
+
+	// create a work queue
+	JobMaker jobman;
+	jobman.createJobs();
+
 
 	/* display end time */
 	time(&fin_time);	// get time at end

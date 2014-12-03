@@ -6,7 +6,9 @@
  * 	http://en.wikipedia.org/wiki/Reserved_IP_addresses	// reserved IP addresses
  * 	http://www.tcpdump.org/pcap.htm	// sniff packets
  * 	http://www.tcpipguide.com/free/t_TCPChecksumCalculationandtheTCPPseudoHeader-2.htm	// TCP header, TCP checksum calc
- * 	http://www.binarytides.com/raw-udp-sockets-c-linux	// Raw UDP sockets
+ * 	http://www.binarytides.com	// Raw UDP sockets; DNS query
+ * 	http://sock-raw.org/papers/syn_scanner	// SYN port scanner
+ * 	http://www.ccs.neu.edu/home/amislove/teaching/cs4700/fall09/handouts/project1-primer.pdf 	// dns protocol
  * 	http://montcs.bloomu.edu/Information/LowLevel/linux-socket-programming.html	// raw socket programming
  */
 
@@ -23,13 +25,12 @@
 
 /* recall all global variables */
 set<int> ports_set;
-set<int>::iterator intset_itr;
 set<string> ips_set;
-set<string> reservedIPs_set;
-set<string>::iterator strset_itr;
+// set<string> reservedIPs_set;
 set<string> scans_set;
 
 // int resv_IPcheck = 0;	// indicates whether or not IP address is checked with reserved IPs list on record
+
 const char *scans[6] = { "SYN", "NULL", "FIN", "XMAS", "ACK", "UDP" };	// list of all scan types
 
 /* default constructor for class ArgsParser */
@@ -455,12 +456,14 @@ void ArgsParser::parse_scans(int argc, char *argv[]) {
 
 /* prints all elements found in vector<int> container passed as argument */
 void ArgsParser::print_setelems(set<int> &setvar) {
+	set<int>::iterator intset_itr;	// to go through set containing ints
 	for ( intset_itr = setvar.begin(); intset_itr != setvar.end(); intset_itr++)
 		cout << *intset_itr << endl;
 }
 
 /* overloaded print_vectelems() function for vector<string> */
 void ArgsParser::print_setelems(set<string> &setvar) {
+	set<string>::iterator strset_itr;	// to go through set containing strings
 	for ( strset_itr = setvar.begin(); strset_itr != setvar.end(); strset_itr++)
 		cout << *strset_itr << endl;
 }
