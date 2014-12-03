@@ -11,8 +11,8 @@
 #include <sys/types.h>
 
 // networking libraries
-#include <netinet/in.h>
-#include <arpa/inet.h>
+// #include <netinet/in.h>
+#include <arpa/inet.h>	// also makes visible all symbols from <inttypes.h> and <netinet/in.h>
 #include <netdb.h>
 
 // STL containers

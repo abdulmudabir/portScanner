@@ -4,6 +4,10 @@
  * 	http://linux.die.net/man/3/inet_aton	// convert IP to binary; reverse endianness
  * 	http://stackoverflow.com/questions/2182002/convert-big-endian-to-little-endian-in-c-without-using-provided-func
  * 	http://en.wikipedia.org/wiki/Reserved_IP_addresses	// reserved IP addresses
+ * 	http://www.tcpdump.org/pcap.htm	// sniff packets
+ * 	http://www.tcpipguide.com/free/t_TCPChecksumCalculationandtheTCPPseudoHeader-2.htm	// TCP header, TCP checksum calc
+ * 	http://www.binarytides.com/raw-udp-sockets-c-linux	// Raw UDP sockets
+ * 	http://montcs.bloomu.edu/Information/LowLevel/linux-socket-programming.html	// raw socket programming
  */
 
 #include "ps_lib.hpp"
@@ -160,7 +164,7 @@ void ArgsParser::getports(char *str) {
 			string port1_str(token_str.substr(0, dash_pos));	// string containing number upto "-"
 			
 			if (port1_str.empty()) {	// case when a negative port number was specified; REJECT such negative port numbers
-				fprintf(stderr, "Error: Negative port numbers are invalid. Ports only in range of 1-1024 are allowed.\n");
+				fprintf(stderr, "Error: Negative port numbers are invalid. Port numbers from 1 up to 65535 are valid.\n");
 				this->usage(stderr);
 				exit(1);
 			}
@@ -168,13 +172,13 @@ void ArgsParser::getports(char *str) {
 			int start_port = atoi(port1_str.c_str());	// convert to integer
 
 			if (start_port == 0) {
-				fprintf(stderr, "Error: Port# 0 not allowed. Ports only in range of 1-1024 are allowed.\n");
+				fprintf(stderr, "Error: Port# 0 not allowed. Port numbers from 1 up to 65535 are valid.\n");
 				this->usage(stderr);
 				exit(1);
 			}
 
-			if (start_port > 1024) {
-				fprintf(stderr, "Error: Ports greater than 1024 not allowed. Acceptable port range of 1-1024.\n");
+			if (start_port > 65535) {
+				fprintf(stderr, "Error: Ports greater than 65535 are invalid. Port numbers from 1 up to 65535 only are valid.\n");
 				this->usage(stderr);
 				exit(1);
 			}
@@ -183,15 +187,15 @@ void ArgsParser::getports(char *str) {
 
 			int p;
 			if ( ( p = atoi(port2_str.c_str()) ) < 0 ) {	// case where second port in range is negative
-				fprintf(stderr, "Error: Negative port numbers are invalid.\n");
+				fprintf(stderr, "Error: Negative port numbers are invalid. Port numbers from 1 up to 65535 are valid.\n");
 				this->usage(stderr);
 				exit(1);
 			}
 
 			int end_port = atoi(port2_str.c_str());
 
-			if (end_port > 1024) {
-				fprintf(stderr, "Error: Ports greater than 1024 not allowed. Acceptable port range of 1-1024.\n");
+			if (end_port > 65535) {
+				fprintf(stderr, "Error: Ports greater than 65535 are invalid. Port numbers from 1 up to 65535 only are valid.\n");
 				this->usage(stderr);
 				exit(1);
 			}
@@ -207,8 +211,8 @@ void ArgsParser::getports(char *str) {
 			
 		} else {
 			int p;
-			if ( (p = atoi(token)) == 0 || p > 1024 ) {
-				fprintf(stderr, "Error: Unacceptable port number specified. Acceptable port range of 1-1024.\n");
+			if ( (p = atoi(token)) == 0 || p > 65535 ) {
+				fprintf(stderr, "Error: Unacceptable port number specified. Port numbers from 1 up to 65535 only are valid.\n");
 				this->usage(stderr);
 				exit(1);
 			}
