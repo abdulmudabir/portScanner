@@ -20,11 +20,13 @@ typedef struct job {
     int portNo;
 } job_t;
 
+// global variables
 extern queue<job_t> workQueue;
 
-class JobMaker {
+class Jobber {
     public:
         void createJobs();
 };
+
 
 #endif

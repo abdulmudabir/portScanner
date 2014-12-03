@@ -5,17 +5,18 @@
 // standard libraries
 #include <iostream>
 #include <ctime>
+#include <signal.h>
+
+//----- forward declarations ------
+void checkPulse(int signum) {
+	(void) signum;	// to suppress 'unused' warning
+	cout << "." << std::flush;
+	alarm(1);	// in turn raise another alarm signal
+}
+
+//--- end forward declarations ----
 
 int main(int argc, char *argv[]) {
-
-	/* display start time */
-	time_t init_time, fin_time;	// for storing time values at beginning of program execution
-	struct tm *abouttime;	// store current time details in this structure
-	char buffer[100];	// string to display to stdout
-	time(&init_time);	// get current time
-	abouttime = localtime(&init_time);
-	strftime(buffer, sizeof buffer, "\nportScanner started at %F %T %Z.", abouttime);
-	cout << buffer << endl;
 
 	ArgsParser ps_args;	// object to parse program arguments
 	// ps_args.fill_resv_IPs();	// keep an account of all reserved IPs that are not allowed to be scanned
@@ -39,9 +40,30 @@ int main(int argc, char *argv[]) {
 	cout << endl;
 
 	// create a work queue
-	JobMaker jobman;
+	Jobber jobman;
 	jobman.createJobs();
 
+	/* register an alarm signal (SIGALRM) handler */
+	struct sigaction act;
+	act.sa_handler = checkPulse;	// handler function
+	sigemptyset(&act.sa_mask);	// no signals to be masked; to receive all signals
+	act.sa_flags = 0;
+	sigaction(SIGALRM, &act, 0);	// register signal to type SIGALRM to be handled
+
+
+	/* display scan start time */
+	time_t init_time, fin_time;	// for storing time values at beginning of program execution
+	struct tm *abouttime;	// store current time details in this structure
+	char buffer[100];	// string to display to stdout
+	time(&init_time);	// get current time
+	abouttime = localtime(&init_time);
+	strftime(buffer, sizeof buffer, "\nportScanner started at %F %T %Z.", abouttime);
+	cout << buffer << endl;
+
+	cout << "Scanning.." << std::flush;
+	alarm(1);	// generate alarm signal to check scan progress
+
+	
 
 	/* display end time */
 	time(&fin_time);	// get time at end

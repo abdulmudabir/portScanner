@@ -5,7 +5,7 @@
 // recall all global variables
 queue<job_t> workQueue;
 
-void JobMaker::createJobs() {
+void Jobber::createJobs() {
 
 	set<string>::iterator ipsItr;
 	set<int>::iterator portsItr;

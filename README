@@ -23,9 +23,10 @@ $ make
 ==========================================================================================
 # Code refactor
 ==========================================================================================
-* can the "set<int> ports_set" be included in the ArgsParser class instead of being in global scope ?
+* can the "set<int> ports_set" be included in the ArgsParser class instead of being in global scope ? (NOT LIKELY)
 * can reduce number of variables in parse_prefixes by passing args to convert_endianness() by &
 * use enums or some data structure for scans
+* separate function call in main() for printing inventory of IPs, scans, ports
 
 
 ==========================================================================================
