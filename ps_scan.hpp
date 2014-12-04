@@ -17,6 +17,7 @@ class Scanner {
 		pcap_t *snifferSession;	// handle to packet capture session
 	public:
 		void initPktSniffing();
+		void runJobs();
 };
 
 #endif

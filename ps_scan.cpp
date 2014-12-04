@@ -10,7 +10,6 @@
 
 void Scanner::initPktSniffing() {
 
-
 	/** set up a default network device to capture packets **/
 	char errbuf[PCAP_ERRBUF_SIZE];	// to fill error message
 	char *netwdev = pcap_lookupdev(errbuf);	// returns a default network device
@@ -51,4 +50,25 @@ void Scanner::initPktSniffing() {
 		exit(1);
 	}
 
+}
+
+void Scanner::runJobs() {
+
+	cout << endl;	// line feed
+
+	while ( !workQueue.empty() ) {	// until all jobs are done
+		
+		job_t job = workQueue.front();	// get next job
+
+		if (job.scanType != "UDP") {	// for all scan type other than "UDP"
+			cout << "not UDP, port# " << job.portNo << endl;
+		} else if ( job.scanType == "UDP" && job.portNo == 53 ) {	// for a DNS query
+			cout << "UDP, port# " << job.portNo << endl;
+		} else {	// all other standard "UDP" scan types other than DNS query type
+			cout << "UDP, port# " << job.portNo << endl;
+		}
+
+		workQueue.pop();
+		
+	}
 }

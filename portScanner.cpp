@@ -44,15 +44,14 @@ int main(int argc, char *argv[]) {
 	Jobber jobman;
 	jobman.createJobs();
 
-	/* register an alarm signal (SIGALRM) handler */
+	/** register an alarm signal (SIGALRM) handler **/
 	struct sigaction act;
 	act.sa_handler = checkPulse;	// handler function
 	sigemptyset(&act.sa_mask);	// no signals to be masked; to receive all signals
 	act.sa_flags = 0;
 	sigaction(SIGALRM, &act, 0);	// register signal to type SIGALRM to be handled
 
-
-	/* display scan start time */
+	/** display scan start time **/
 	time_t init_time, fin_time;	// for storing time values at beginning of program execution
 	struct tm *abouttime;	// store current time details in this structure
 	char buffer[100];	// string to display to stdout
@@ -68,6 +67,7 @@ int main(int argc, char *argv[]) {
 	Scanner scanman;
 	if (ps_args.get_threads() == 0) {	// no threads
 		scanman.initPktSniffing();
+		scanman.runJobs();
 
 	} else {	// multi-threaded
 		cout << "\ni'd like threads today please" << endl;

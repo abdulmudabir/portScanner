@@ -27,7 +27,7 @@ $ make
 * can reduce number of variables in parse_prefixes by passing args to convert_endianness() by &
 * use enums or some data structure for scans
 * separate function call in main() for printing inventory of IPs, scans, ports
-
+* gettimeofday() for time difference might take lesser lines
 
 ==========================================================================================
 # TEST CASES for cli args parsing
@@ -48,6 +48,7 @@ $ make
 	** reject ports greater than 65535 or ports less than equal to 0 (DONE)
 * can ipAddresses.txt file contain IP prefixes too ? (yes, DONE)
 * validate correct IP and correct prefix with "--prefix" (IP check same as that for "--ip")
+	** no IP addresses specified by user (DONE)
 	** reject "--ip 17" (DONE)
 	** reject input like 127.2.3.54.79 (invalid coz 5 octets) (DONE)
 	** reject IP prefix like 172.16/12 (DONE)

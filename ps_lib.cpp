@@ -116,6 +116,12 @@ void ArgsParser::parse_args(int argc, char *argv[]) {
 		}
  	}
 
+ 	if ( ips_set.empty() ) {	// case where user did not specify any IP addresss at all
+ 		fprintf(stderr, "Error: At least one IP address needed to scan on.\n");
+ 		this->usage(stderr);
+ 		exit(1);
+ 	}
+
  	if ( ports_set.empty() ) {	// if no ports were entered i.e. "--ports " was not a cli argument, use default ports 1-1024
  		for (int i = 1; i <= 1024; i++ ) {
  			ports_set.insert(i);
