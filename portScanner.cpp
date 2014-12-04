@@ -1,6 +1,7 @@
 
 #include "ps_lib.hpp"
 #include "ps_netw.hpp"
+#include "ps_scan.hpp"
 
 // standard libraries
 #include <iostream>
@@ -63,13 +64,21 @@ int main(int argc, char *argv[]) {
 	cout << "Scanning.." << std::flush;
 	alarm(1);	// generate alarm signal to check scan progress
 
+	// let the scanning begin
+	Scanner scanman;
+	if (ps_args.get_threads() == 0) {	// no threads
+		scanman.initPktSniffing();
+
+	} else {	// multi-threaded
+		cout << "\ni'd like threads today please" << endl;
+	}
 	
 
 	/* display end time */
 	time(&fin_time);	// get time at end
 	abouttime = localtime(&fin_time);
 	memset(buffer, 0x0, sizeof buffer);	// flush out char buffer
-	strftime(buffer, sizeof buffer, "portScanner ended at %F %T %Z.", abouttime);
+	strftime(buffer, sizeof buffer, "\n\nportScanner ended at %F %T %Z.", abouttime);
 	fprintf( stdout, "%s Scan took %.3f seconds.\n\n", buffer, difftime(fin_time, init_time) );	// output difference in start and end time too
 
 	return 0;

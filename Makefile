@@ -1,8 +1,8 @@
 CC = g++
 CPFLAGS = -g -Wall -Wextra
-LDFLAGS = -lm -pthread
+LDFLAGS = -lm -pthread -lpcap
 
-SRC = portScanner.cpp ps_lib.cpp ps_netw.cpp
+SRC = portScanner.cpp ps_lib.cpp ps_netw.cpp ps_scan.cpp
 OBJ = $(SRC:.cpp=.o)
 BIN = portScanner
 
