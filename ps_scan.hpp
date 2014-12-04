@@ -6,6 +6,7 @@
 // networking libraries
 #include <pcap/pcap.h>
 #include <arpa/inet.h>
+#include <netinet/tcp.h>	// tcp header
 
 // macros
 #define TIMEOUT 4	// 4 seconds allowed for host to respond
@@ -13,6 +14,20 @@
 #define NO_PROMISC 0	// non promiscuous mode; do not sniff all traffic
 #define READ_TIMEOUT 0	// timeout in milliseconds needed for certain platforms
 #define SRC_PORT 2015	// set unoccupied, unofficial source port randomly
+
+/* 
+ * pseudo header type used for checksum calculation instead of struct tcphdr alone
+ * 	look in Scanner::getTCPpacket() for details about this header's fields
+ */
+struct pseudohdr {
+	uint32_t src;
+	uint32_t dst;
+	unsigned char mbz;
+	unsigned char protocol;
+	uint16_t tcp_len;
+
+	struct tcphdr hdrtcp;	// includes a tcp header too
+};
 
 class Scanner {
 	private:

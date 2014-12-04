@@ -24,15 +24,15 @@
 #include <fstream>
 #include <set>
 
-/* recall all global variables */
+/** recall all global variables **/
 set<int> ports_set;
 set<string> ips_set;
 // set<string> reservedIPs_set;
 set<string> scans_set;
 
-// int resv_IPcheck = 0;	// indicates whether or not IP address is checked with reserved IPs list on record
-
 const char *scans[6] = { "SYN", "NULL", "FIN", "XMAS", "ACK", "UDP" };	// list of all scan types
+
+// int resv_IPcheck = 0;	// indicates whether or not IP address is checked with reserved IPs list on record
 
 /* default constructor for class ArgsParser */
 ArgsParser::ArgsParser() {
@@ -440,7 +440,7 @@ void ArgsParser::parse_scans(int argc, char *argv[]) {
 
 	 	int j;
 	 	for (j = 0; j < 6; j++) {	// check with each known scan type
-	 		if ( strcasecmp(argv[i + 1], scans[j]) != 0 )
+	 		if ( strcasecmp(argv[i + 1], scans[j]) != 0 )	// ignore case when comparing
 	 			continue;
 	 		else {
 	 			scans_set.insert(argv[i + 1]);	// if scan type match found, make note of that scan type

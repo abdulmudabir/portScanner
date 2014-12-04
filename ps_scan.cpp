@@ -8,7 +8,6 @@
 #include <cstring>
 
 // networking libraries
-#include <netinet/tcp.h>	// tcp header
 #include <netinet/ip.h>	// ip header
 #include <netinet/udp.h>	// udp header
 #include <ifaddrs.h>
@@ -122,7 +121,7 @@ char * Scanner::getTCPpacket(char *dstIP, int dstPort, char *scanname, char *src
 	struct iphdr *ipHeader = NULL;
 	struct tcphdr *tcpHeader = NULL;
 
-	char datagram[4096];	// buffer representing packet
+	static char datagram[4096];	// buffer representing packet
 	memset(datagram, 0x00, sizeof datagram);	// zero-out buffer initially
 
 	/** consruct IP header part of packet **/
@@ -136,11 +135,73 @@ char * Scanner::getTCPpacket(char *dstIP, int dstPort, char *scanname, char *src
 	ipHeader->ttl = 64;	// seconds, can also be seen as hop counts (decrements by 1); standard seen as 64 usually (e.g. ping program)
 	ipHeader->protocol = IPPROTO_TCP;	// value 6 for TCP protocol
 	ipHeader->check = 0;	// set to 0 before checksum calculation
-	/*ipHeader->saddr = 
-	ipHeader->daddr = */	// TODO
+	ipHeader->saddr = inet_addr(srcIP);	// source address as an integer (32-bit)
+	ipHeader->daddr = inet_addr(dstIP);	// destination address as an integer (32-bit)
 
-	ipHeader->check = calcChecksum( (uint16_t *) datagram, sizeof(struct ip) );	// calculate actual checksum for ip header
+	ipHeader->check = calcChecksum( (uint16_t *) datagram, sizeof(struct ip) );	// calculate actual checksum for ip header; pass ptr ipHeader if you need to
 
+	/** consruct TCP header part of packet **/
+	tcpHeader = (struct tcphdr *) ( datagram + sizeof(struct ip) );
+	tcpHeader->source = htons(srcPort);	// source port
+	tcpHeader->dest = htons(dstPort);	// destination port
+	tcpHeader->seq = htonl(100000);	// sequence number; for identification of packet
+	tcpHeader->ack_seq = 0;	// acknowledgment number
+	tcpHeader->doff = (sizeof(struct tcphdr) / 4);	// specifies size of tcphdr in 32-bit words
+	tcpHeader->fin = 0;	// set all flags to 0 prior to sending packet
+	tcpHeader->syn = 0;
+	tcpHeader->rst = 0;
+	tcpHeader->psh = 0;
+	tcpHeader->ack = 0;
+	tcpHeader->urg = 0;
+	tcpHeader->window = htons(14600);	// size of receive window; max 65535 bytes; optimal usually: bandwidth * latency (bytes)
+	tcpHeader->check = 0;	// set to 0 before checksum calculation
+	tcpHeader->urg_ptr = 0;	// urgent pointer
+
+	/** set tcp header flags according to scan type on record **/
+	const char *allscans[6] = { "SYN", "NULL", "FIN", "XMAS", "ACK", "UDP" };
+	int i;
+
+	for (i = 0; i < 6; i++) {	// like assigning integer to each scan type
+		if ( strcasecmp(scanname, allscans[i]) == 0 ) {
+			break;
+		}
+	}
+
+	switch (i) {
+		case 0:	// SYN scan
+			tcpHeader->syn = 1;
+			break;
+		case 1:	// NULL scan
+			break;	// no flags to set
+		case 2:	// FIN scan
+			tcpHeader->fin = 1;
+			break;
+		case 3:	// XMAS scan
+			tcpHeader->fin = 1;
+			tcpHeader->psh = 1;
+			tcpHeader->urg = 1;
+			break;
+		case 4:	// ACK scan
+			tcpHeader->ack = 1;
+			break;
+		default:	// scan type cannot be "UDP" here
+			break;
+	}
+
+	/** TCP header checksum needs to be calculated along with a pseudo header **/
+	struct pseudohdr *soodohdr = NULL;
+	soodohdr->src = inet_addr(srcIP);	// integer form of source IP address
+	soodohdr->dst = inet_addr(dstIP);	// integer form of destination IP address
+	soodohdr->mbz = 0;	// 8 reserved bits, all set to 0
+	soodohdr->protocol = IPPROTO_TCP;	// TCP protocol
+	soodohdr->tcp_len = htons( sizeof(struct tcphdr) );
+	memcpy( &soodohdr->hdrtcp, tcpHeader, sizeof(struct tcphdr) );	// tcp header field of pseudo header
+
+	/** calculate tcp header checksum now that we have our pseudo header **/
+	tcpHeader->check = calcChecksum( (uint16_t *) soodohdr, sizeof(struct pseudohdr) );
+
+	return datagram;	// serve packet
+	
 }
 
 uint16_t Scanner::calcChecksum( uint16_t *pktref, int hdrlen) {
