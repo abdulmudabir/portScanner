@@ -11,6 +11,7 @@
 #include <netinet/tcp.h>	// tcp header
 #include <netinet/ip.h>	// ip header
 #include <netinet/udp.h>	// udp header
+#include <ifaddrs.h>
 
 
 void Scanner::initPktSniffing() {
@@ -62,12 +63,15 @@ void Scanner::runJobs() {
 	cout << endl;	// new line
 	char *packet = NULL;	// packet to be sent to dst port
 
+	// get source machine's IP address
+	getMachineIPaddr(this->machineIP);
+
 	while ( !workQueue.empty() ) {	// until all jobs are done
 		
 		job_t job = workQueue.front();	// get next job
 
 		if (job.scanType != "UDP") {	// for all scan type other than "UDP"
-			packet = getTCPpacket();
+			packet = getTCPpacket( const_cast<char *>( (job.ipAddr).c_str() ), job.portNo, const_cast<char *>( (job.scanType).c_str() ), machineIP, SRC_PORT);
 		} else if ( job.scanType == "UDP" && job.portNo == 53 ) {	// for a DNS query
 
 		} else {	// all other standard "UDP" scan types other than DNS query type
@@ -79,7 +83,40 @@ void Scanner::runJobs() {
 	}
 }
 
-char * Scanner::getTCPpacket() {
+void Scanner::getMachineIPaddr(char *hostip) {
+
+	memset(hostip, 0x00, INET_ADDRSTRLEN);	// zero-out ip addr holder initially
+
+	struct ifaddrs *addrStruct = NULL;	// store linked list of network interfaces of local system
+	struct ifaddrs *ifa = NULL;	// to iterate over interface linked list
+
+	getifaddrs(&addrStruct);	// creates linked list
+
+	for (ifa = addrStruct; ifa != NULL; ifa = ifa->ifa_next) {
+        
+        if ( ifa->ifa_addr->sa_family == AF_INET ) {	// concerned with IPv4 address
+
+        	if ( strcmp(ifa->ifa_name, "eth0") == 0 ) {	// for network interface type: ethernet
+        		struct in_addr addr = ( (struct sockaddr_in *) ifa->ifa_addr )->sin_addr;
+        		snprintf( hostip, INET_ADDRSTRLEN, "%s", inet_ntoa(addr) );
+        	}
+
+        }
+
+    }
+
+    if ( addrStruct != NULL ) {
+    	freeifaddrs(addrStruct);
+    }
+
+    if ( strlen(hostip) == 0 ) {	// if IP not populated
+    	fprintf(stderr, "\nError: Could not determine local machine's IP.\n");
+    	exit(1);
+    }
+
+}
+
+char * Scanner::getTCPpacket(char *dstIP, int dstPort, char *scanname, char *srcIP, int srcPort) {
 
 	/** refer IP, TCP headers **/
 	struct iphdr *ipHeader = NULL;
@@ -129,4 +166,3 @@ uint16_t Scanner::calcChecksum( uint16_t *pktref, int hdrlen) {
 	return ((uint16_t) ~sum);	// 16-bit one's complement of 'sum'
 
 }
-

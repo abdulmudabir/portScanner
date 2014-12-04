@@ -1,8 +1,8 @@
 
 /*
  * References:
- * 	http://linux.die.net/man/3/inet_aton	// convert IP to binary; reverse endianness
- * 	http://stackoverflow.com/questions/2182002/convert-big-endian-to-little-endian-in-c-without-using-provided-func
+ * 	http://linux.die.net/man/
+ * 	http://stackoverflow.com/
  * 	http://en.wikipedia.org/wiki/Reserved_IP_addresses	// reserved IP addresses
  * 	http://www.tcpdump.org/pcap.htm	// sniff packets
  * 	http://www.tcpipguide.com/free/t_TCPChecksumCalculationandtheTCPPseudoHeader-2.htm	// TCP header, TCP checksum calc
@@ -403,7 +403,7 @@ void ArgsParser::readIPfile(char *file) {
 			if ( strcmp(lof.c_str(), "") == 0) {
 				continue;
 			} else if ( (slashpos = lof.find("/")) != string::npos) {	// check if there's an IP prefix in file
-				this->parse_prefixes(const_cast<char *>(lof.c_str()), ips_set);	// remove cosntness using const_cast<type>
+				this->parse_prefixes(const_cast<char *>(lof.c_str()), ips_set);	// remove constness using const_cast<type>
 			} else {	// just IP not an IP prefix
 				this->getIP( const_cast<char *>( lof.c_str() ) );
 			}
