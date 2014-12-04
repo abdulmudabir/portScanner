@@ -5,8 +5,13 @@
 // standard libraries
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
-#include <arpa/inet.h>
+// networking libraries
+#include <netinet/tcp.h>	// tcp header
+#include <netinet/ip.h>	// ip header
+#include <netinet/udp.h>	// udp header
+
 
 void Scanner::initPktSniffing() {
 
@@ -54,21 +59,74 @@ void Scanner::initPktSniffing() {
 
 void Scanner::runJobs() {
 
-	cout << endl;	// line feed
+	cout << endl;	// new line
+	char *packet = NULL;	// packet to be sent to dst port
 
 	while ( !workQueue.empty() ) {	// until all jobs are done
 		
 		job_t job = workQueue.front();	// get next job
 
 		if (job.scanType != "UDP") {	// for all scan type other than "UDP"
-			cout << "not UDP, port# " << job.portNo << endl;
+			packet = getTCPpacket();
 		} else if ( job.scanType == "UDP" && job.portNo == 53 ) {	// for a DNS query
-			cout << "UDP, port# " << job.portNo << endl;
+
 		} else {	// all other standard "UDP" scan types other than DNS query type
-			cout << "UDP, port# " << job.portNo << endl;
+
 		}
 
-		workQueue.pop();
-		
+		workQueue.pop();	// move on to next job
+
 	}
 }
+
+char * Scanner::getTCPpacket() {
+
+	/** refer IP, TCP headers **/
+	struct iphdr *ipHeader = NULL;
+	struct tcphdr *tcpHeader = NULL;
+
+	char datagram[4096];	// buffer representing packet
+	memset(datagram, 0x00, sizeof datagram);	// zero-out buffer initially
+
+	/** consruct IP header part of packet **/
+	ipHeader = (struct iphdr *) datagram;
+	ipHeader->ihl = 5;	// internet header length; number of 32-bit words in header
+	ipHeader->version = 4;	// IPv4
+	ipHeader->tos = 0;	// type of service; 0 as standard, some other service like VoIP may require setting this field
+	ipHeader->tot_len = sizeof(struct ip) + sizeof(struct tcphdr);	// total length of ip header; (struct ip) guarantees IP header without options
+	ipHeader->id = htons(9876);	// set some simple identification
+	ipHeader->frag_off = 0;	// no fragmentation
+	ipHeader->ttl = 64;	// seconds, can also be seen as hop counts (decrements by 1); standard seen as 64 usually (e.g. ping program)
+	ipHeader->protocol = IPPROTO_TCP;	// value 6 for TCP protocol
+	ipHeader->check = 0;	// set to 0 before checksum calculation
+	/*ipHeader->saddr = 
+	ipHeader->daddr = */	// TODO
+
+	ipHeader->check = calcChecksum( (uint16_t *) datagram, sizeof(struct ip) );	// calculate actual checksum for ip header
+
+}
+
+uint16_t Scanner::calcChecksum( uint16_t *pktref, int hdrlen) {
+	
+	uint32_t sum = 0;	// store final sum here; 0 initially; let this be 32-bit for carry over bits
+
+	for (int i = 0; i < (hdrlen / 2); i++) {	// e.g. header length 20 / 2 = 10 16-bit portions to iterate
+		sum += *pktref;	// keep adding current 16-bit header portion to last sum
+		pktref++;	// increment to next 16-bit portion
+	}
+
+	/** just in case header length turned out odd **/
+	if ( (hdrlen % 2) != 0 ) {
+		pktref++;
+		sum += *pktref;	// add the one-odd 16-bit header portion
+	}
+
+	/** add carry over bits to last sum **/
+	sum = (sum & 0xffff) 	// only last 16-bits in checksum
+					+ (sum >> 16);	// only carry over bits
+	sum = sum + (sum >> 16);	// in case there was still that one last carry over bit
+
+	return ((uint16_t) ~sum);	// 16-bit one's complement of 'sum'
+
+}
+

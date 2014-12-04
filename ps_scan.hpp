@@ -2,8 +2,9 @@
 #ifndef _PS_SCAN_HPP_
 #define _PS_SCAN_HPP_
 
-// standard libraries
+// networking libraries
 #include <pcap/pcap.h>
+#include <arpa/inet.h>
 
 // macros
 #define TIMEOUT 4
@@ -18,6 +19,8 @@ class Scanner {
 	public:
 		void initPktSniffing();
 		void runJobs();
+		char * getTCPpacket();
+		uint16_t calcChecksum( uint16_t *, int);
 };
 
 #endif
