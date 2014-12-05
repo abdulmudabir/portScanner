@@ -80,11 +80,11 @@ void Scanner::runJobs() {
 
 			/** keep a Raw socket handy for TCP scans **/
 			if ( (sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP)) < 0 ) {
-				fprintf(stderr, "Error: Unable to create raw socket.\n");
+				fprintf(stderr, "\nError: Unable to create raw socket.\n");
 				exit(1);
 			}
 		
-		} else if ( (strcasecmp( (job.scanType).c_str(), "UDP") == 0) && job.portNo == 53 ) {	// for a DNS query
+		} else if ( (strcasecmp( (job.scanType).c_str(), "UDP") == 0) && job.portNo == DNS_PORT ) {	// for a DNS query
 
 			/** make a DNS query packet **/
 			packet = getDNSQueryPacket( (unsigned char *) "stackoverflow.com", 	// domain name for DNS query
@@ -92,9 +92,26 @@ void Scanner::runJobs() {
 										packetLen 	// to get length of packet
 										);
 
+			/** keep a UDP socket handy for dns queries **/
+			if ( (sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
+				fprintf(stderr, "\nError: Unable to create UDP socket for DNS queries.\n");
+				exit(1);
+			}
+
 		} else {	// all other standard "UDP" scan types other than DNS query type
 
+			/** send a fixed-length random payload **/
+			packet = getRandomUDPpayload();
+
+			/** do not forget the UDP socket handle **/
+			if ( (sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
+				fprintf(stderr, "\nError: Unable to create UDP socket.\n");
+				exit(1);
+			}
+
 		}
+
+		
 
 		workQueue.pop();	// move on to next job
 
@@ -277,4 +294,15 @@ char * Scanner::getDNSQueryPacket( unsigned char *domainName, int recordType, in
 
 	return dnsbuf;	// serve packet
 
+}
+
+char * Scanner::getRandomUDPpayload() {
+
+	static char payload[20];	// randomly set to 20 bytes; 512 bytes is considered a good bet but too large
+
+	for (int i = 0; i < 20; i++) {
+		payload[i] = 'x';
+	}
+
+	return payload;
 }

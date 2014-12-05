@@ -16,6 +16,7 @@
 #define SRC_PORT 2015	// set unoccupied, unofficial source port randomly
 
 #define A_RECORD 1 	// DNS record type: A, for Address record
+#define DNS_PORT 53	// DNS queries go to port# 53
 
 /* 
  * pseudo header type used for checksum calculation instead of struct tcphdr alone
@@ -48,6 +49,7 @@ struct dnshdr {
 	uint16_t arcount;	// specifies number of resource records in the additional records section
 };
 
+/** stucture for dns question part that follows dns header **/
 struct dnsquery {	// question name or domain name part is added separately to packet
 	uint16_t qtype;	// type of the query e.g. A record, MX record, etc.
 	uint16_t qclass;	// class of the query
@@ -64,6 +66,7 @@ class Scanner {
 		char * getTCPpacket(char *, int, char *, char *, int);
 		uint16_t calcChecksum( uint16_t *, int);
 		char * getDNSQueryPacket( unsigned char *, int, int &);
+		char * getRandomUDPpayload();
 };
 
 
