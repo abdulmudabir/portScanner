@@ -6,7 +6,6 @@
 // standard libraries
 #include <iostream>
 #include <ctime>
-#include <signal.h>
 
 //----- forward declarations ------
 void checkPulse(int signum) {

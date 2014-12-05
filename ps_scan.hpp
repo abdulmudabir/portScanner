@@ -2,6 +2,8 @@
 #ifndef _PS_SCAN_HPP_
 #define _PS_SCAN_HPP_
 
+// standard libraries
+#include <signal.h>
 
 // networking libraries
 #include <pcap/pcap.h>
@@ -17,6 +19,8 @@
 
 #define A_RECORD 1 	// DNS record type: A, for Address record
 #define DNS_PORT 53	// DNS queries go to port# 53
+
+#define MAX_RETRIES 3	// try sending packet at most 3 times
 
 /* 
  * pseudo header type used for checksum calculation instead of struct tcphdr alone
@@ -55,9 +59,14 @@ struct dnsquery {	// question name or domain name part is added separately to pa
 	uint16_t qclass;	// class of the query
 };
 
+// global variable for packet capture session
+extern pcap_t *snifferSession;	// handle to packet capture session
+
+// global declaration of signal handler function
+void sigTimeout(int);
+
 class Scanner {
 	private:
-		pcap_t *snifferSession;	// handle to packet capture session
 		char machineIP[INET_ADDRSTRLEN];	// local machine's IP address
 	public:
 		void initPktSniffing();

@@ -5,7 +5,6 @@
 
 // standard libraries
 #include <iostream>
-#include <string>
 
 // STL container/s
 #include <queue>
@@ -16,8 +15,8 @@ using namespace std;
  *  IP address needs to be scanned on what all port numbers
  *  with which scans */
 typedef struct job {
-    string ipAddr;
-    string scanType;
+    char *ipAddr;
+    char *scanType;
     int portNo;
 } job_t;
 

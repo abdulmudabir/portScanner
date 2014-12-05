@@ -15,8 +15,8 @@ void Jobber::createJobs() {
 		for ( scansItr = scans_set.begin(); scansItr != scans_set.end(); scansItr++) {
 			for ( portsItr = ports_set.begin(); portsItr != ports_set.end(); portsItr++ ) {
 				job_t job;	// create a job
-				job.ipAddr = *ipsItr;
-				job.scanType = *scansItr;
+				job.ipAddr = const_cast<char *> ( (*ipsItr).c_str() );	// convert string to char * and remove constness too
+				job.scanType = const_cast<char *> ( (*scansItr).c_str() );
 				job.portNo = *portsItr;
 
 				workQueue.push(job);	// enqueue job

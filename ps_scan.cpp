@@ -13,6 +13,9 @@
 #include <ifaddrs.h>
 #include <sys/socket.h>
 
+// recall all global variables
+pcap_t *snifferSession;
+
 void Scanner::initPktSniffing() {
 
 	/** set up a default network device to capture packets **/
@@ -32,8 +35,8 @@ void Scanner::initPktSniffing() {
 	}
 
 	/** open network device to sniff packets; get a handle to the capture **/
-	this->snifferSession = pcap_open_live( netwdev, SNAP_LEN, NO_PROMISC, READ_TIMEOUT, errbuf);
-	if (this->snifferSession == NULL) {
+	snifferSession = pcap_open_live( netwdev, SNAP_LEN, NO_PROMISC, READ_TIMEOUT, errbuf);
+	if (snifferSession == NULL) {
 		fprintf(stderr, "\nError: Unable to open network device.\n");
 		exit(1);
 	}
@@ -44,14 +47,14 @@ void Scanner::initPktSniffing() {
 
 	/** need to setup a packet filter program with filter expression **/
 	struct bpf_program fp;
-	if (pcap_compile(this->snifferSession, &fp, filter_exp, 0, netmask) == -1) {
-		fprintf( stderr, "\nError: Unable to setup packet filter program, error message: %s\n ", pcap_geterr(this->snifferSession) );
+	if (pcap_compile(snifferSession, &fp, filter_exp, 0, netmask) == -1) {
+		fprintf( stderr, "\nError: Unable to setup packet filter program, error message: %s\n ", pcap_geterr(snifferSession) );
 		exit(1);
 	}
 
 	/** finally, set the packet filter **/
-	if ( pcap_setfilter(this->snifferSession, &fp) == -1) {
-		fprintf( stderr, "\nError: Unable to setup packet filter, error message: %s\n ", pcap_geterr(this->snifferSession) );
+	if ( pcap_setfilter(snifferSession, &fp) == -1) {
+		fprintf( stderr, "\nError: Unable to setup packet filter, error message: %s\n ", pcap_geterr(snifferSession) );
 		exit(1);
 	}
 
@@ -73,10 +76,20 @@ void Scanner::runJobs() {
 		
 		job_t job = workQueue.front();	// get next job
 
-		if ( strcasecmp( (job.scanType).c_str(), "UDP") != 0 ) {	// for all scan types other than "UDP"; strcasecmp() used instead of std::string::compare for case insensitivity
+		/** make sockaddr_in structure from destination IP address in job **/
+		struct sockaddr_in sin;
+		sin.sin_family = AF_INET;
+		inet_pton( AF_INET, job.ipAddr, &sin.sin_addr);	// copy destination IP address
+		sin.sin_port = htons(job.portNo);	// copy destination port number
+
+		if ( strcasecmp(job.scanType, "UDP") != 0 ) {	// for all scan types other than "UDP"; strcasecmp() used instead of std::string::compare for case insensitivity
 
 			/** make a packet with appropriate TCP flags set **/
-			packet = getTCPpacket( const_cast<char *>( (job.ipAddr).c_str() ), job.portNo, const_cast<char *>( (job.scanType).c_str() ), machineIP, SRC_PORT );
+			packet = getTCPpacket( job.ipAddr, job.portNo, job.scanType, machineIP, SRC_PORT );
+
+			/** get length of packet for TCP scans **/
+			struct iphdr *ipheader = (struct iphdr *) packet;	// reference to ip header in packet
+			packetLen = ipheader->tot_len;
 
 			/** keep a Raw socket handy for TCP scans **/
 			if ( (sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP)) < 0 ) {
@@ -84,7 +97,7 @@ void Scanner::runJobs() {
 				exit(1);
 			}
 		
-		} else if ( (strcasecmp( (job.scanType).c_str(), "UDP") == 0) && job.portNo == DNS_PORT ) {	// for a DNS query
+		} else if ( (strcasecmp(job.scanType, "UDP") == 0) && job.portNo == DNS_PORT ) {	// for a DNS query
 
 			/** make a DNS query packet **/
 			packet = getDNSQueryPacket( (unsigned char *) "stackoverflow.com", 	// domain name for DNS query
@@ -109,9 +122,45 @@ void Scanner::runJobs() {
 				exit(1);
 			}
 
+			/** packet length **/
+			packetLen = 20;	// for fixed-lenth (20 bytes)
+
 		}
 
-		
+		/** because a custom IP header was written in packets, set a socket option to include custom ip header **/
+		if ( strcasecmp(job.scanType, "UDP") != 0 ) {	// not UDP scan type
+			int optval = 1;
+			const int *valptr = &optval;
+
+			if ( setsockopt(sockfd, IPPROTO_TCP, IP_HDRINCL, valptr, sizeof(optval)) < 0 ) {	// set socket option
+				fprintf(stderr, "\nWarning: Unable to set HDRINCL option for IP: %s port: %d\n", job.ipAddr, job.portNo);
+			}
+		}
+
+		/** setup an alarm buzzer to check status of response from destination **/
+		struct sigaction act;
+		act.sa_handler = sigTimeout;	// alarm signal handler function
+		sigemptyset(&act.sa_mask);
+		act.sa_flags = 0;
+		sigaction(SIGALRM, &act, 0);	// register alarm signal
+
+		/** get set to send packet over to destination **/
+		int retry = 0;
+		while (retry < MAX_RETRIES) {
+
+			/** send packet **/
+			if ( sendto(sockfd, packet, packetLen, 0, (struct sockaddr *) &sin, sizeof(sin)) < 0 ) {
+				fprintf(stderr, "\nError: Unable to send packet for IP: %s port: %d", job.ipAddr, job.portNo);
+				exit(1);
+			}
+
+			/** wait for response from destination but timeout after 4 seconds if no response **/
+			alarm(TIMEOUT);	// allow 4 seconds max for response
+
+			/** when response packet arrives from destination within timeout window, process 1 packet **/
+			// int retval = pcap_dispatch(snifferSession, 1, recvdPacket, (u_char *) );
+
+		}
 
 		workQueue.pop();	// move on to next job
 
@@ -305,4 +354,13 @@ char * Scanner::getRandomUDPpayload() {
 	}
 
 	return payload;
+}
+
+/*
+ * once response timeout window expires, sigTimeout() ensures that no 
+ * attempt shall be made to process packets.
+ */
+void sigTimeout(int signum) {
+	(void) signum;	// to suppress " unused parameter 'signum' " warning
+	pcap_breakloop(snifferSession);	// break out
 }
