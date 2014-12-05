@@ -3,7 +3,7 @@
  * References:
  * 	http://linux.die.net/man/
  * 	http://stackoverflow.com/
- * 	http://en.wikipedia.org/wiki/Reserved_IP_addresses	// reserved IP addresses
+ * 	http://en.wikipedia.org/
  * 	http://www.tcpdump.org/pcap.htm	// sniff packets
  * 	http://www.tcpipguide.com/free/t_TCPChecksumCalculationandtheTCPPseudoHeader-2.htm	// TCP header, TCP checksum calc
  * 	http://www.binarytides.com	// Raw UDP sockets; DNS query

@@ -11,7 +11,7 @@
 #include <netinet/ip.h>	// ip header
 #include <netinet/udp.h>	// udp header
 #include <ifaddrs.h>
-
+#include <sys/socket.h>
 
 void Scanner::initPktSniffing() {
 
@@ -60,18 +60,37 @@ void Scanner::initPktSniffing() {
 void Scanner::runJobs() {
 
 	cout << endl;	// new line
+	
 	char *packet = NULL;	// packet to be sent to dst port
+	int packetLen;	// length of packet
 
 	// get source machine's IP address
 	getMachineIPaddr(this->machineIP);
+
+	int sockfd;	// socket handle, set according to type of scan
 
 	while ( !workQueue.empty() ) {	// until all jobs are done
 		
 		job_t job = workQueue.front();	// get next job
 
-		if (job.scanType != "UDP") {	// for all scan type other than "UDP"
-			packet = getTCPpacket( const_cast<char *>( (job.ipAddr).c_str() ), job.portNo, const_cast<char *>( (job.scanType).c_str() ), machineIP, SRC_PORT);
-		} else if ( job.scanType == "UDP" && job.portNo == 53 ) {	// for a DNS query
+		if ( strcasecmp( (job.scanType).c_str(), "UDP") != 0 ) {	// for all scan types other than "UDP"; strcasecmp() used instead of std::string::compare for case insensitivity
+
+			/** make a packet with appropriate TCP flags set **/
+			packet = getTCPpacket( const_cast<char *>( (job.ipAddr).c_str() ), job.portNo, const_cast<char *>( (job.scanType).c_str() ), machineIP, SRC_PORT );
+
+			/** keep a Raw socket handy for TCP scans **/
+			if ( (sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP)) < 0 ) {
+				fprintf(stderr, "Error: Unable to create raw socket.\n");
+				exit(1);
+			}
+		
+		} else if ( (strcasecmp( (job.scanType).c_str(), "UDP") == 0) && job.portNo == 53 ) {	// for a DNS query
+
+			/** make a DNS query packet **/
+			packet = getDNSQueryPacket( (unsigned char *) "stackoverflow.com", 	// domain name for DNS query
+										A_RECORD, 	// Address record type DNS query
+										packetLen 	// to get length of packet
+										);
 
 		} else {	// all other standard "UDP" scan types other than DNS query type
 
@@ -92,20 +111,17 @@ void Scanner::getMachineIPaddr(char *hostip) {
 	getifaddrs(&addrStruct);	// creates linked list
 
 	for (ifa = addrStruct; ifa != NULL; ifa = ifa->ifa_next) {
-        
         if ( ifa->ifa_addr->sa_family == AF_INET ) {	// concerned with IPv4 address
 
         	if ( strcmp(ifa->ifa_name, "eth0") == 0 ) {	// for network interface type: ethernet
         		struct in_addr addr = ( (struct sockaddr_in *) ifa->ifa_addr )->sin_addr;
         		snprintf( hostip, INET_ADDRSTRLEN, "%s", inet_ntoa(addr) );
         	}
-
         }
-
     }
 
     if ( addrStruct != NULL ) {
-    	freeifaddrs(addrStruct);
+    	freeifaddrs(addrStruct);	// free interface addresses
     }
 
     if ( strlen(hostip) == 0 ) {	// if IP not populated
@@ -162,7 +178,7 @@ char * Scanner::getTCPpacket(char *dstIP, int dstPort, char *scanname, char *src
 	int i;
 
 	for (i = 0; i < 6; i++) {	// like assigning integer to each scan type
-		if ( strcasecmp(scanname, allscans[i]) == 0 ) {
+		if ( strcasecmp(scanname, allscans[i]) == 0 ) {	// ignore case when comparing strings
 			break;
 		}
 	}
@@ -225,5 +241,40 @@ uint16_t Scanner::calcChecksum( uint16_t *pktref, int hdrlen) {
 	sum = sum + (sum >> 16);	// in case there was still that one last carry over bit
 
 	return ((uint16_t) ~sum);	// 16-bit one's complement of 'sum'
+
+}
+
+char * Scanner::getDNSQueryPacket( unsigned char *domainName, int recordType, int &pktLength) {
+	
+	static char dnsbuf[4096];	// dns datagram buffer
+	memset(dnsbuf, 0x00, sizeof dnsbuf);	// zero-out buffer initially
+
+	/** make dns header in packet **/
+	struct dnshdr *dnsHeader = (struct dnshdr *) dnsbuf;	// get reference to dns header
+	dnsHeader->id = htons(123);	// set identification number
+	dnsHeader->qr = 0;	// is a query
+	dnsHeader->opcode = 0;	// set 0 for a standard query
+	dnsHeader->aa = 0;	// non-authoritative answer
+	dnsHeader->tc = 0;	// no truncation
+	dnsHeader->rd = 1;	// recursively query for answer
+	dnsHeader->ra = 0;	// recursive query support not available
+	dnsHeader->z = 0;
+	dnsHeader->rcode = 0;	// response code not set
+	dnsHeader->qdcount = 1;	// 1 question
+	dnsHeader->ancount = 0;	// no answers
+	dnsHeader->nscount = 0;	// no nameservers
+	dnsHeader->arcount = 0;	// no additional records
+
+	/** make dns question portion in packet **/
+	unsigned char *qname = (unsigned char *) ( dnsbuf + sizeof(struct dnshdr) );	// get reference to location after dns header to append domain name details
+	sprintf( (char *) qname, "%s", domainName);	// fill domain name to mark start of dns question portion of packet
+	struct dnsquery *dnsQ = (struct dnsquery *) ( dnsbuf + sizeof(struct dnshdr) + (strlen( (const char *) qname ) + 1) );	// reference to location after dns header and question name
+	dnsQ->qtype = htons(recordType);	// query type A
+	dnsQ->qclass = htons(1);	// represents Internet address
+
+	/** get length of entire DNS query packet **/
+	pktLength = sizeof(struct dnshdr) + strlen( (const char *) qname ) + 1 + sizeof(struct dnsquery);
+
+	return dnsbuf;	// serve packet
 
 }
