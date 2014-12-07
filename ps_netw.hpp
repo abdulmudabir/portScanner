@@ -31,9 +31,10 @@ typedef struct scan_result {
 } scan_result_t;
 
 // global variables
-extern queue<job_t> workQueue;
-extern vector<scan_result_t> scansResults;
-extern map< char *, map< int, vector<scan_result_t> > > resultsMap;
+extern queue<job_t> workQueue;  // queue of all jobs
+extern vector<scan_result_t> scansResultsVect;  // vector of al scan results structures
+extern map< int, vector<scan_result_t> > port2scanresultsMap;   // port number mapped to its vector of scan results structure
+extern map< char *, map< int, vector<scan_result_t> > > resultsMap; // IP address mapped to port->scanresults map
 
 class Jobber {
     public:

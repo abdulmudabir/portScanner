@@ -170,6 +170,8 @@ void Scanner::runJobs() {
 
 		}
 
+		// printScanResults();
+
 		workQueue.pop();	// move on to next job
 
 	}
@@ -417,15 +419,12 @@ void recvdPacket(u_char *args, const struct pcap_pkthdr *pheader, const u_char *
 					case 1: case 2: case 9:
 					case 10: case 13:	// implies port is "Filtered"
 						snprintf(scanrslt.portState, 15, "Filtered");
-						scansResults.push_back(scanrslt);	// push to list of scan results
 						break;
 					case 3:
 						if ( strcasecmp(job->scanType, "UDP") == 0) {	// if scan type: UDP
 							snprintf(scanrslt.portState, 15, "Closed");
-							scansResults.push_back(scanrslt);
 						} else {	// for scan types: TCP
 							snprintf(scanrslt.portState, 15, "Open|Filtered");
-							scansResults.push_back(scanrslt);	// push to list of scan results
 						}
 						break;
 					default:
@@ -453,7 +452,6 @@ void recvdPacket(u_char *args, const struct pcap_pkthdr *pheader, const u_char *
 				}
 			}
 
-			scansResults.push_back(scanrslt);	// push to list of scan results
 			break;
 		case 17:	// UDP protocol
 			udpHeader = (struct udphdr *) (packet + SIZE_ETHERNET + iphLen);	// get reference to UDP header from packet
@@ -462,11 +460,20 @@ void recvdPacket(u_char *args, const struct pcap_pkthdr *pheader, const u_char *
 			if(ntohs(udpHeader->source) == job->portNo) {
 				snprintf(scanrslt.portState, 15, "Open");
 			}
-			scansResults.push_back(scanrslt);	// push to list of scan results
 			break;
 		default:
 			break;
 	}
+
+	/** map port number to its corresponding scan results vector **/
+	map< int, vector<scan_result_t> >::iterator p2sItr;
+	if ( (p2sItr = port2scanresultsMap.find(job->portNo)) == port2scanresultsMap.end() ) {	// if port number entry not present in map
+		scansResultsVect.push_back(scanrslt);	// push to vector of scan results
+		port2scanresultsMap.insert( pair< int, vector<scan_result_t> >(job->portNo, scansResultsVect) );
+	} else {	// if port number present, add new scan result to vector of scan results
+		(p2sItr->second).push_back(scanrslt);
+	}
+
 }
 
 /*

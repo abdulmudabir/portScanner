@@ -84,7 +84,8 @@ class Scanner {
 		uint16_t calcChecksum( uint16_t *, int);
 		char * getDNSQueryPacket( unsigned char *, int, int &);
 		char * getRandomUDPpayload();
-		static char * getServiceName(char *, int);
+		void printScanResults();
+		char * getServiceName(char *, int);
 };
 
 
