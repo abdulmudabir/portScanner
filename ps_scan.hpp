@@ -8,7 +8,11 @@
 // networking libraries
 #include <pcap/pcap.h>
 #include <arpa/inet.h>
-#include <netinet/tcp.h>	// tcp header
+#include <netinet/tcp.h>	// TCP header
+#include <netinet/ip_icmp.h>	// ICMP header
+#include <netdb.h>	// for struct servent
+
+#include "ps_netw.hpp"
 
 // macros
 #define TIMEOUT 4	// 4 seconds allowed for host to respond
@@ -21,6 +25,9 @@
 #define DNS_PORT 53	// DNS queries go to port# 53
 
 #define MAX_RETRIES 3	// try sending packet at most 3 times
+
+#define SIZE_ETHERNET 14	// size of ethernet headers is always exactly 14 bytes
+#define MIN_SIZE_IPHDR 20 	// minimum length of IP header is 20 bytes
 
 /* 
  * pseudo header type used for checksum calculation instead of struct tcphdr alone
@@ -62,8 +69,9 @@ struct dnsquery {	// question name or domain name part is added separately to pa
 // global variable for packet capture session
 extern pcap_t *snifferSession;	// handle to packet capture session
 
-// global declaration of signal handler function
-void sigTimeout(int);
+// global declaration of functions
+void sigTimeout(int);	// signal handler function
+void recvdPacket(u_char *, const struct pcap_pkthdr *, const u_char *);
 
 class Scanner {
 	private:
@@ -76,6 +84,7 @@ class Scanner {
 		uint16_t calcChecksum( uint16_t *, int);
 		char * getDNSQueryPacket( unsigned char *, int, int &);
 		char * getRandomUDPpayload();
+		static char * getServiceName(char *, int);
 };
 
 

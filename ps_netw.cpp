@@ -4,6 +4,8 @@
 
 // recall all global variables
 queue<job_t> workQueue;
+vector<scan_result_t> scansResults;
+map< char *, map< int, vector<scan_result_t> > > resultsMap;
 
 void Jobber::createJobs() {
 
@@ -15,8 +17,8 @@ void Jobber::createJobs() {
 		for ( scansItr = scans_set.begin(); scansItr != scans_set.end(); scansItr++) {
 			for ( portsItr = ports_set.begin(); portsItr != ports_set.end(); portsItr++ ) {
 				job_t job;	// create a job
-				job.ipAddr = const_cast<char *> ( (*ipsItr).c_str() );	// convert string to char * and remove constness too
-				job.scanType = const_cast<char *> ( (*scansItr).c_str() );
+				snprintf( job.ipAddr, INET_ADDRSTRLEN, "%s", (*ipsItr).c_str() );	// convert string to char * and remove constness too
+				snprintf( job.scanType, 5, "%s", (*scansItr).c_str() );
 				job.portNo = *portsItr;
 
 				workQueue.push(job);	// enqueue job

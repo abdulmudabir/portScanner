@@ -158,7 +158,7 @@ void Scanner::runJobs() {
 			alarm(TIMEOUT);	// allow 4 seconds max for response
 
 			/** when response packet arrives from destination within timeout window, process 1 packet **/
-			// int retval = pcap_dispatch(snifferSession, 1, recvdPacket, (u_char *) );
+			int retval = pcap_dispatch(snifferSession, 1, recvdPacket, (u_char *) &job);
 
 		}
 
@@ -363,4 +363,86 @@ char * Scanner::getRandomUDPpayload() {
 void sigTimeout(int signum) {
 	(void) signum;	// to suppress " unused parameter 'signum' " warning
 	pcap_breakloop(snifferSession);	// break out
+}
+
+void recvdPacket(u_char *args, const struct pcap_pkthdr *pheader, const u_char *packet) {
+	
+	job_t *job = (job_t *) args;	// get reference to job
+	scan_result_t scanrslt;	// reference to scan results type structure
+
+	snprintf(scanrslt.scanType, 5, "%s", job->scanType);	// fill in type of scan
+
+	if (pheader == NULL) {
+		fprintf(stderr, "\nError: Packet timestamp unusually not set in received packet.\n");
+		return;	// something's not right, terminate
+	}
+
+	/** parse received packet to make useful deductions **/
+
+	struct iphdr *ipHeader = (struct iphdr *) (packet + SIZE_ETHERNET);	// reference to ip header in packet
+	
+	/** check IP header length **/
+	int iphLen = (ipHeader->ihl) * 4;
+	if (iphLen < MIN_SIZE_IPHDR) {
+		fprintf(stderr, "\nError: Invalid IP header length of %d found in received packet.\n", iphLen);
+		return;	// terminate packet parsing
+	}
+
+	struct icmphdr *icmpHeader = NULL;	// ICMP header type
+	struct tcphdr *tcpHeader = NULL;	// TCP header type
+
+	/** arrive at appropriate conclusions based on IP header's protocol portion in packet **/
+	switch (ipHeader->protocol) {
+		case 1:	// ICMP protocol; control messages that give out useful conclusions about port statuses
+			icmpHeader = (struct icmphdr *) (packet + SIZE_ETHERNET + iphLen);
+
+			/** now check type of control message **/
+			if (icmpHeader->type == 3) {	// type: Destination Unreachable; check 'code' to get more info
+				switch (icmpHeader->code) {
+					case 1: case 2: case 9:
+					case 10: case 13:	// implies port is "Filtered"
+						snprintf(scanrslt.portState, 15, "Filtered");
+						scansResults.push_back(scanrslt);	// push to list of scan results
+						break;
+					case 3:
+						if ( strcasecmp(job->scanType, "UDP") == 0) {	// if scan type: UDP
+							snprintf(scanrslt.portState, 15, "Closed");
+							scansResults.push_back(scanrslt);
+						} else {	// for scan types: TCP
+							snprintf(scanrslt.portState, 15, "Open|Filtered");
+							scansResults.push_back(scanrslt);	// push to list of scan results
+						}
+						break;
+				}
+			}
+			break;
+		case 6:	// TCP protocol; 
+	}
+
+
+}
+
+/*
+ * function returns name of standard service running on port number passed as argument
+ */
+char * Scanner::getServiceName(char *scanname, int port) {
+	
+	static char buf[100];
+
+	/** get name of service running on destination port **/
+	struct servent *service;
+	if (strcasecmp(scanname, "UDP") != 0) {	// for TCP scans
+		service = getservbyport(htons(port), "TCP");
+	} else {	// for UDP scans
+		service = getservbyport(htons(port), "UDP");
+	}
+
+	if (service != NULL) {	// a standard known service was found
+		snprintf(buf, 100, "%s", service->s_name);
+	} else {	// couldn't figure out service name
+		snprintf(buf, 100, "Unassigned");
+	}
+
+	return buf;
+
 }
