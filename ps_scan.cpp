@@ -158,13 +158,25 @@ void Scanner::runJobs() {
 			alarm(TIMEOUT);	// allow 4 seconds max for response
 
 			/** when response packet arrives from destination within timeout window, process 1 packet **/
-			int retval = pcap_dispatch(snifferSession, 1, recvdPacket, (u_char *) &job);
+			int dispStatus = pcap_dispatch(snifferSession, 1, recvdPacket, (u_char *) &job);
+			alarm(0);	// cancel buzzing alarm if 1 packet received
+
+			if (dispStatus == -2 || dispStatus == -1) {	// if call to pcap_breakloop() was done due to timeout OR some error occured
+				retry++;	// try once more
+				continue;
+			} else {
+				break;	// count was exhausted, we have our 1 packet parsed
+			}
 
 		}
 
 		workQueue.pop();	// move on to next job
 
 	}
+
+	// free used resources once jobs are done
+	close(sockfd);
+
 }
 
 void Scanner::getMachineIPaddr(char *hostip) {
@@ -383,13 +395,16 @@ void recvdPacket(u_char *args, const struct pcap_pkthdr *pheader, const u_char *
 	
 	/** check IP header length **/
 	int iphLen = (ipHeader->ihl) * 4;
-	if (iphLen < MIN_SIZE_IPHDR) {
+	if (iphLen < 20) {	// minimum size of IP header
 		fprintf(stderr, "\nError: Invalid IP header length of %d found in received packet.\n", iphLen);
 		return;	// terminate packet parsing
 	}
 
+	int tcphLen;	// to store tcp header length
+
 	struct icmphdr *icmpHeader = NULL;	// ICMP header type
 	struct tcphdr *tcpHeader = NULL;	// TCP header type
+	struct udphdr *udpHeader = NULL;	// UDP header type
 
 	/** arrive at appropriate conclusions based on IP header's protocol portion in packet **/
 	switch (ipHeader->protocol) {
@@ -413,13 +428,45 @@ void recvdPacket(u_char *args, const struct pcap_pkthdr *pheader, const u_char *
 							scansResults.push_back(scanrslt);	// push to list of scan results
 						}
 						break;
+					default:
+						break;
 				}
 			}
 			break;
 		case 6:	// TCP protocol; 
+			tcpHeader = (struct tcphdr *) (packet + SIZE_ETHERNET + iphLen);	// get reference to TCP header from packet
+			tcphLen = tcpHeader->doff * 4;
+
+			if (tcphLen < 20) {	// minimum size of TCP header
+				fprintf(stderr, "\nError: Invalid TCP header length of %d found in received packet.\n", tcphLen);
+				return;	// terminate packet parsing
+			}
+
+			/** SYN port scanning **/
+			if ( (tcpHeader->syn == 1) && (tcpHeader->ack == 1) ) {
+				snprintf(scanrslt.portState, 15, "Open");
+			} else if ( tcpHeader->rst == 1 ) {
+				if ( strcasecmp(job->scanType, "ACK") == 0 ) {	// if scan type: ACK
+					snprintf(scanrslt.portState, 15, "Unfiltered");
+				} else {
+					snprintf(scanrslt.portState, 15, "Closed");
+				}
+			}
+
+			scansResults.push_back(scanrslt);	// push to list of scan results
+			break;
+		case 17:	// UDP protocol
+			udpHeader = (struct udphdr *) (packet + SIZE_ETHERNET + iphLen);	// get reference to UDP header from packet
+
+			/** check if packet originated from destination port in current 'job' **/
+			if(ntohs(udpHeader->source) == job->portNo) {
+				snprintf(scanrslt.portState, 15, "Open");
+			}
+			scansResults.push_back(scanrslt);	// push to list of scan results
+			break;
+		default:
+			break;
 	}
-
-
 }
 
 /*

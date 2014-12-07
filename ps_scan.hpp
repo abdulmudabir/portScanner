@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <netinet/tcp.h>	// TCP header
 #include <netinet/ip_icmp.h>	// ICMP header
+#include <netinet/udp.h>	// UDP header
 #include <netdb.h>	// for struct servent
 
 #include "ps_netw.hpp"
@@ -27,7 +28,6 @@
 #define MAX_RETRIES 3	// try sending packet at most 3 times
 
 #define SIZE_ETHERNET 14	// size of ethernet headers is always exactly 14 bytes
-#define MIN_SIZE_IPHDR 20 	// minimum length of IP header is 20 bytes
 
 /* 
  * pseudo header type used for checksum calculation instead of struct tcphdr alone
