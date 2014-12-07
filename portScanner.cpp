@@ -72,14 +72,13 @@ int main(int argc, char *argv[]) {
 		cout << "\ni'd like threads today please" << endl;
 	}
 
-	alarm(0);	// 
+	alarm(0);	// turn alarm off
 	
-
 	/* display end time */
 	time(&fin_time);	// get time at end
 	abouttime = localtime(&fin_time);
 	memset(buffer, 0x0, sizeof buffer);	// flush out char buffer
-	strftime(buffer, sizeof buffer, "\n\nportScanner ended at %F %T %Z.", abouttime);
+	strftime(buffer, sizeof buffer, "\nportScanner ended at %F %T %Z.", abouttime);
 	fprintf( stdout, "%s Scan took %.3f seconds.\n\n", buffer, difftime(fin_time, init_time) );	// output difference in start and end time too
 
 	return 0;

@@ -4,9 +4,7 @@
 #include "ps_lib.hpp"
 
 // standard libraries
-// #include <cstdio>
-// #include <cstdlib>
-// #include <cstring>
+#include <iomanip>
 
 // networking libraries
 #include <netinet/ip.h>	// ip header
@@ -101,7 +99,7 @@ void Scanner::runJobs() {
 		} else if ( (strcasecmp(job.scanType, "UDP") == 0) && job.portNo == DNS_PORT ) {	// for a DNS query
 
 			/** make a DNS query packet **/
-			packet = getDNSQueryPacket( (unsigned char *) "stackoverflow.com", 	// domain name for DNS query
+			packet = getDNSQueryPacket( (unsigned char *) "www.stackoverflow.com", 	// domain name for DNS query
 										A_RECORD, 	// Address record type DNS query
 										packetLen 	// to get length of packet
 										);
@@ -431,7 +429,7 @@ void recvdPacket(u_char *args, const struct pcap_pkthdr *pheader, const u_char *
 					case 10: case 13:	// implies port is "Filtered"
 						snprintf(scanrslt.portState, 15, "Filtered");
 						break;
-					case 3:
+					case 3:	// port unreachable
 						if ( strcasecmp(job->scanType, "UDP") == 0) {	// if scan type: UDP
 							snprintf(scanrslt.portState, 15, "Closed");
 						} else {	// for scan types: TCP
@@ -491,16 +489,27 @@ void recvdPacket(u_char *args, const struct pcap_pkthdr *pheader, const u_char *
 
 void Scanner::printScanResults() {
 	
+	cout << "\n\n";	// new line
+
 	set<string>::iterator ipSetStrItr;
+	set<string>::iterator scansSetStrItr;
+	set<int>::iterator portSetItr;
 	vector<scan_result_t>::iterator scanRsltsVectItr;
-	for ( ipSetStrItr = ips_set.begin(); ipSetStrItr != ips_set.end(); ipSetStrItr++) {
 
-		for (scanRsltsVectItr = scansResultsVect.begin(); scanRsltsVectItr != scansResultsVect.end(); scanRsltsVectItr++) {
-			if ( strcmp( (*ipSetStrItr).c_str(), (*scanRsltsVectItr).ipAddr ) == 0 ) {
-				cout << (*ipSetStrItr).c_str() << "in ips_set, " << (*scanRsltsVectItr).ipAddr << " in scansResultsVect" << endl;
+
+	for ( ipSetStrItr = ips_set.begin(); ipSetStrItr != ips_set.end(); ipSetStrItr++ ) {	// for every dst IP address on record
+		cout << setfill('-') << setw(150) << "\n";
+		cout << "IP Address: " << *ipSetStrItr << endl;
+		cout << setfill('-') << setw(150) << "\n";
+
+		for ( scanRsltsVectItr = scansResultsVect.begin(); scanRsltsVectItr != scansResultsVect.end(); scanRsltsVectItr++ ) {
+			if ( strcmp( (*scanRsltsVectItr).ipAddr, (*ipSetStrItr).c_str() ) == 0 ) {	// filter by IP address
+				cout << setiosflags(ios::left) << setfill(' ') << setw(10) << (*scanRsltsVectItr).portNo 
+							<< setw(25) << getServiceName( (*scanRsltsVectItr).scanType, (*scanRsltsVectItr).portNo );
+				cout << (*scanRsltsVectItr).scanType << " (" << (*scanRsltsVectItr).portState << ") ";
 			}
+			cout << endl;
 		}
-
 	}
 }
 
