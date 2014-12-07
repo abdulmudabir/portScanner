@@ -1,11 +1,12 @@
 
 #include "ps_scan.hpp"
 #include "ps_netw.hpp"
+#include "ps_lib.hpp"
 
 // standard libraries
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
+// #include <cstdio>
+// #include <cstdlib>
+// #include <cstring>
 
 // networking libraries
 #include <netinet/ip.h>	// ip header
@@ -62,7 +63,7 @@ void Scanner::initPktSniffing() {
 
 void Scanner::runJobs() {
 
-	cout << endl;	// new line
+	// cout << endl;	// new line
 	
 	char *packet = NULL;	// packet to be sent to dst port
 	int packetLen;	// length of packet
@@ -132,8 +133,8 @@ void Scanner::runJobs() {
 			int optval = 1;
 			const int *valptr = &optval;
 
-			if ( setsockopt(sockfd, IPPROTO_TCP, IP_HDRINCL, valptr, sizeof(optval)) < 0 ) {	// set socket option
-				fprintf(stderr, "\nWarning: Unable to set HDRINCL option for IP: %s port: %d\n", job.ipAddr, job.portNo);
+			if ( setsockopt(sockfd, IPPROTO_IP, IP_HDRINCL, valptr, sizeof(optval)) < 0 ) {	// set socket option
+				fprintf(stderr, "\nWarning: Unable to set HDRINCL option for IP: %s port: %d", job.ipAddr, job.portNo);
 			}
 		}
 
@@ -170,14 +171,21 @@ void Scanner::runJobs() {
 
 		}
 
-		// printScanResults();
-
+		/** map current IP address to vector of maps: port number (key) => all current port scan results (value) **/
+/*		map< char *, vector< map< int, vector<scan_result_t> > > >::iterator rsltItr;	// map iterator
+		if ( ( rsltItr = resultsMap.find(job.ipAddr) ) == resultsMap.end() ) {	// current IP address not present in map
+			resultsMap.insert( pair< char *, vector< map< int, vector<scan_result_t> > > >(job.ipAddr, port2scanresultsMap) );
+		} else {	// current IP address present in map
+			(rsltItr->second).push_back( port2scanresultsMap );	// add map to vector of maps
+		}
+*/
 		workQueue.pop();	// move on to next job
 
 	}
 
 	// free used resources once jobs are done
 	close(sockfd);
+	pcap_close(snifferSession);
 
 }
 
@@ -285,16 +293,16 @@ char * Scanner::getTCPpacket(char *dstIP, int dstPort, char *scanname, char *src
 	}
 
 	/** TCP header checksum needs to be calculated along with a pseudo header **/
-	struct pseudohdr *soodohdr = NULL;
-	soodohdr->src = inet_addr(srcIP);	// integer form of source IP address
-	soodohdr->dst = inet_addr(dstIP);	// integer form of destination IP address
-	soodohdr->mbz = 0;	// 8 reserved bits, all set to 0
-	soodohdr->protocol = IPPROTO_TCP;	// TCP protocol
-	soodohdr->tcp_len = htons( sizeof(struct tcphdr) );
-	memcpy( &soodohdr->hdrtcp, tcpHeader, sizeof(struct tcphdr) );	// tcp header field of pseudo header
+	struct pseudohdr soodohdr;
+	soodohdr.src = inet_addr(srcIP);	// integer form of source IP address
+	soodohdr.dst = inet_addr(dstIP);	// integer form of destination IP address
+	soodohdr.mbz = 0;	// 8 reserved bits, all set to 0
+	soodohdr.protocol = IPPROTO_TCP;	// TCP protocol
+	soodohdr.tcp_len = htons( sizeof(struct tcphdr) );
+	memcpy( &soodohdr.hdrtcp, tcpHeader, sizeof(struct tcphdr) );	// tcp header field of pseudo header
 
 	/** calculate tcp header checksum now that we have our pseudo header **/
-	tcpHeader->check = calcChecksum( (uint16_t *) soodohdr, sizeof(struct pseudohdr) );
+	tcpHeader->check = calcChecksum( (uint16_t *) &soodohdr, sizeof(struct pseudohdr) );
 
 	return datagram;	// serve packet
 	
@@ -376,6 +384,7 @@ char * Scanner::getRandomUDPpayload() {
  */
 void sigTimeout(int signum) {
 	(void) signum;	// to suppress " unused parameter 'signum' " warning
+	cout << "." << std::flush;
 	pcap_breakloop(snifferSession);	// break out
 }
 
@@ -384,6 +393,8 @@ void recvdPacket(u_char *args, const struct pcap_pkthdr *pheader, const u_char *
 	job_t *job = (job_t *) args;	// get reference to job
 	scan_result_t scanrslt;	// reference to scan results type structure
 
+	snprintf(scanrslt.ipAddr, INET_ADDRSTRLEN, "%s", job->ipAddr);	// fill in IP addr for scan
+	scanrslt.portNo = job->portNo;	// fill in port number for scan
 	snprintf(scanrslt.scanType, 5, "%s", job->scanType);	// fill in type of scan
 
 	if (pheader == NULL) {
@@ -466,14 +477,31 @@ void recvdPacket(u_char *args, const struct pcap_pkthdr *pheader, const u_char *
 	}
 
 	/** map port number to its corresponding scan results vector **/
-	map< int, vector<scan_result_t> >::iterator p2sItr;
+/*	map< int, vector<scan_result_t> >::iterator p2sItr;
 	if ( (p2sItr = port2scanresultsMap.find(job->portNo)) == port2scanresultsMap.end() ) {	// if port number entry not present in map
 		scansResultsVect.push_back(scanrslt);	// push to vector of scan results
 		port2scanresultsMap.insert( pair< int, vector<scan_result_t> >(job->portNo, scansResultsVect) );
 	} else {	// if port number present, add new scan result to vector of scan results
 		(p2sItr->second).push_back(scanrslt);
-	}
+	}*/
 
+	scansResultsVect.push_back(scanrslt);
+
+}
+
+void Scanner::printScanResults() {
+	
+	set<string>::iterator ipSetStrItr;
+	vector<scan_result_t>::iterator scanRsltsVectItr;
+	for ( ipSetStrItr = ips_set.begin(); ipSetStrItr != ips_set.end(); ipSetStrItr++) {
+
+		for (scanRsltsVectItr = scansResultsVect.begin(); scanRsltsVectItr != scansResultsVect.end(); scanRsltsVectItr++) {
+			if ( strcmp( (*ipSetStrItr).c_str(), (*scanRsltsVectItr).ipAddr ) == 0 ) {
+				cout << (*ipSetStrItr).c_str() << "in ips_set, " << (*scanRsltsVectItr).ipAddr << " in scansResultsVect" << endl;
+			}
+		}
+
+	}
 }
 
 /*
