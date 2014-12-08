@@ -5,9 +5,6 @@
 // recall all global variables
 queue<job_t> workQueue;
 vector<scan_result_t> scansResultsVect;
-// map< char *, vector<scan_result_t> > ip2resultsMap;
-// map< int, vector<scan_result_t> > port2scanresultsMap;
-// map< char *, map< int, vector<scan_result_t> > > resultsMap;
 
 void Jobber::createJobs() {
 

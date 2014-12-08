@@ -57,6 +57,8 @@ void Scanner::initPktSniffing() {
 		exit(1);
 	}
 
+	pcap_freecode(&fp);	// free BPF program
+
 }
 
 void Scanner::runJobs() {
@@ -169,14 +171,6 @@ void Scanner::runJobs() {
 
 		}
 
-		/** map current IP address to vector of maps: port number (key) => all current port scan results (value) **/
-/*		map< char *, vector< map< int, vector<scan_result_t> > > >::iterator rsltItr;	// map iterator
-		if ( ( rsltItr = resultsMap.find(job.ipAddr) ) == resultsMap.end() ) {	// current IP address not present in map
-			resultsMap.insert( pair< char *, vector< map< int, vector<scan_result_t> > > >(job.ipAddr, port2scanresultsMap) );
-		} else {	// current IP address present in map
-			(rsltItr->second).push_back( port2scanresultsMap );	// add map to vector of maps
-		}
-*/
 		workQueue.pop();	// move on to next job
 
 	}
@@ -474,15 +468,6 @@ void recvdPacket(u_char *args, const struct pcap_pkthdr *pheader, const u_char *
 			break;
 	}
 
-	/** map port number to its corresponding scan results vector **/
-/*	map< int, vector<scan_result_t> >::iterator p2sItr;
-	if ( (p2sItr = port2scanresultsMap.find(job->portNo)) == port2scanresultsMap.end() ) {	// if port number entry not present in map
-		scansResultsVect.push_back(scanrslt);	// push to vector of scan results
-		port2scanresultsMap.insert( pair< int, vector<scan_result_t> >(job->portNo, scansResultsVect) );
-	} else {	// if port number present, add new scan result to vector of scan results
-		(p2sItr->second).push_back(scanrslt);
-	}*/
-
 	scansResultsVect.push_back(scanrslt);
 
 }
@@ -496,11 +481,12 @@ void Scanner::printScanResults() {
 	set<int>::iterator portSetItr;
 	vector<scan_result_t>::iterator scanRsltsVectItr;
 
+	int portbuf;
 
 	for ( ipSetStrItr = ips_set.begin(); ipSetStrItr != ips_set.end(); ipSetStrItr++ ) {	// for every dst IP address on record
-		cout << setfill('-') << setw(150) << "\n";
+		cout << setfill('-') << setw(100) << "\n";
 		cout << "IP Address: " << *ipSetStrItr << endl;
-		cout << setfill('-') << setw(150) << "\n";
+		cout << setfill('-') << setw(100) << "\n";
 
 		for ( scanRsltsVectItr = scansResultsVect.begin(); scanRsltsVectItr != scansResultsVect.end(); scanRsltsVectItr++ ) {
 			if ( strcmp( (*scanRsltsVectItr).ipAddr, (*ipSetStrItr).c_str() ) == 0 ) {	// filter by IP address
@@ -509,6 +495,22 @@ void Scanner::printScanResults() {
 				cout << (*scanRsltsVectItr).scanType << " (" << (*scanRsltsVectItr).portState << ") ";
 			}
 			cout << endl;
+		}
+
+		cout << setfill('-') << setw(70) << "\n";
+		cout << "\nService Version Detection for IP Address: " << *ipSetStrItr << "\n";
+		cout << setfill('-') << setw(70) << "\n";
+		cout << "\nPort" << "\t" << "Service Version" << endl;
+		cout << setfill('-') << setw(70) << "\n";
+
+		for ( portSetItr = ports_set.begin(); portSetItr != ports_set.end(); portSetItr++ ) {	// for every port of a dst IP address
+			portbuf = *portSetItr;
+
+			if ( (portbuf == 22) || (portbuf == 24) || (portbuf == 43) || (portbuf == 80) || (portbuf == 110) || (portbuf == 143) ) {
+				service_version_t srcVers;
+				getServiceVersion(portbuf, const_cast<char *>((*ipSetStrItr).c_str()), srcVers);
+				printServiceVersions(srcVers);
+			}
 		}
 	}
 }
@@ -536,4 +538,220 @@ char * Scanner::getServiceName(char *scanname, int port) {
 
 	return buf;
 
+}
+
+void Scanner::getServiceVersion(int dstport, char *dstip, service_version_t &svern) {
+
+	/** create a local TCP socket to connect to dst IP address **/
+	int sockfd;	// socket handle
+	if( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+		fprintf(stderr, "\nError: Unable to create a TCP client while querying for services versions.");
+		return;
+	}
+
+	/** fill in details of the dst address socket structure **/
+	struct sockaddr_in dstAddr;
+	dstAddr.sin_family = AF_INET;
+	dstAddr.sin_port = htons(dstport);
+
+	struct hostent *hostinfo;
+	if ( (hostinfo = gethostbyname(dstip)) == NULL ) {
+		fprintf(stderr, "\nError: Could not resolve dest IP address while querying for services versions.");
+		return;
+	}
+
+	memcpy( (char *) &dstAddr.sin_addr.s_addr, (char *) hostinfo->h_addr, hostinfo->h_length );
+
+	/** initiate socket connection to dest IP address **/
+	if ( connect( sockfd, (struct sockaddr *) &dstAddr, sizeof(dstAddr) ) < 0 ) {
+		fprintf(stderr, "\nError: Could not establish connect to destination IP address: %s Port: %d while querying for services versions.", dstip, dstport);
+		return;
+	}
+
+	/** get set to query ports on destination IP address **/
+	char recvbuffer[200];
+	int retval;	// receive status from dest IP address
+	int i, buflen;
+	char *serv = NULL;
+	char *str = NULL;
+
+	char dataString[] = "hello world!";	// query text to be sent to destination IP
+	int bytestoSend = strlen(dataString);
+	int bytesSent = 0, totalBytesSent = 0;
+
+	char delim[] = " ";
+	char *token = NULL;
+
+	switch(dstport) {
+		case 22:	// SSH, index 0 in svern.sercversion
+			if ( (retval = recv(sockfd, recvbuffer, 200, 0)) <= 0 ) {
+				fprintf(stderr, "\nError: Unable to read response for services detection from dest IP address.");
+				return;
+			}
+
+			buflen = strlen( (char *) recvbuffer);
+			for (i = 0; i < buflen; i++) {
+				if (recvbuffer[i] == '\n')
+					break;
+				svern.sercversion[0][i] = recvbuffer[i];
+			}
+			svern.sercversion[0][i] = '\0';	// null terminator
+
+			break;
+		case 24:	// SMTP, index 1 in svern->sercversion
+			if ((retval = recv(sockfd, recvbuffer, 200, 0)) <= 0 ) {
+				fprintf(stderr, "\nError: Unable to read response for services detection from dest IP address.");
+				return;
+			}
+
+			// copy recvbuffer into a temp str
+			str = (char *) malloc(strlen(recvbuffer) + 1);
+			snprintf(str, strlen(recvbuffer), "%s", recvbuffer);
+
+			i = 0;
+			for (token = strtok(str, delim); ((i < 6) && token); i++, token = strtok(NULL, delim) ) {
+				switch(i) {
+					case 2:	// service versions separated by a " "
+						strcpy(svern.sercversion[1], token);
+						strcat(svern.sercversion[1], " ");
+						break;
+					case 3:
+						strcat(svern.sercversion[1], token);
+						strcat(svern.sercversion[1], " ");
+						break;
+					case 4:
+						strcat(svern.sercversion[1], token);
+						strcat(svern.sercversion[1], " ");
+						break;
+					case 5:
+						strcat(svern.sercversion[1], token);
+						break;
+					default:
+						break;
+				}
+			}
+			free(str);
+
+			break;
+		case 43:	// WHOIS protocol to be used to send query and received response
+					// WHOIS, index 2 in svern->sercversion
+			/** send text query over to dst **/
+			while ( bytestoSend > 0 ) {	// data present
+				if ( (bytesSent = write(sockfd, dataString, bytestoSend)) < 0 ) {
+					fprintf(stderr, "\nError: Unable to send query text for services detection to dest IP address.");
+					return;		
+				} else {
+					bytestoSend -= bytesSent;
+					totalBytesSent += bytesSent;
+				}
+			}
+
+			if ( (retval = recv(sockfd, recvbuffer, 200, 0)) <= 0 ) {	// receive response in buffer
+				fprintf(stderr, "\nError: Unable to read response for services detection from dest IP address.");
+				return;
+			}
+
+			if ( (serv = strstr(recvbuffer, "Server Version")) == NULL ) {
+				snprintf(svern.sercversion[2], 80, "Unknown service.");
+			} else {
+
+				/** fill in service version from what appears after "Server Version" upto end of line **/
+				serv += strlen("Server Version") + 1;
+				int addtnlen = strlen(serv);
+				for (i = 0; i < addtnlen; i++) {
+					if (serv[i] == '\n') {
+						break;
+					}
+					svern.sercversion[2][i] = serv[i];
+				}
+				svern.sercversion[2][i] = '\0';	// null termination
+			}
+			break;
+		case 80:	// HTTP, index 3 in svern->sercversion
+
+			break;
+		case 110:	// POP, index 4 in svern->sercversion
+			if ( (retval = recv(sockfd, recvbuffer, 200, 0)) <= 0 ) {
+				fprintf(stderr, "\nError: Unable to read response for services detection from dest IP address.");
+				return;
+			}
+			// copy recvbuffer into a temp str
+			str = (char *) malloc(strlen(recvbuffer) + 1);
+			snprintf(str, strlen(recvbuffer), "%s", recvbuffer);
+
+			snprintf(svern.sercversion[4], strlen("Version: "), "Version: ");	// version to print		
+
+			i = 0;
+			for (token = strtok(str, delim); ((i < 3) && token); i++, token = strtok(NULL, delim) ) {
+				switch(i) {
+					case 1:	// service versions separated by a " "
+						strcpy(svern.sercversion[4], token);
+						break;
+					default:
+						break;
+				}
+			}
+
+			free(str);
+			break;
+		case 143:	// IMAP, index 5 in svern->sercversion
+			if ( (retval = recv(sockfd, recvbuffer, 200, 0)) <= 0 ) {
+				fprintf(stderr, "\nError: Unable to read response for services detection from dest IP address.");
+				return;
+			}
+
+			// copy recvbuffer into a temp str
+			str = NULL;
+			snprintf(str, strlen(recvbuffer), "%s", recvbuffer);
+
+			snprintf(svern.sercversion[5], strlen("Version: "), "Version: ");	// version to print		
+
+			i = 0;
+			for (token = strtok(str, delim); ((i < 4) && token); i++, token = strtok(NULL, delim) ) {
+				switch(i) {
+					case 3:	// service versions separated by a " "
+						strcat(svern.sercversion[5], token);
+						break;
+					default:
+						break;
+				}
+			}
+
+			break;
+		default:
+			break;
+	}
+
+}
+
+
+void Scanner::printServiceVersions(service_version_t &svc) {
+	
+	cout << endl;
+
+	int i;
+	for (i = 0; i < 6; i++)	{
+		switch(i) {
+			case 0:	// SSH
+				cout << "22" << "\t" << svc.sercversion[i] << "\n";
+				break;
+			case 1:	// SMTP
+				cout << "24" << "\t" << svc.sercversion[i] << "\n";
+				break;
+			case 2:	// WHOIS
+				cout << "43" << "\t" << svc.sercversion[i] << "\n";
+				break;
+			case 3:	// HTTP
+				cout << "80" << "\t" << svc.sercversion[i] << "\n";
+				break;
+			case 4:	// POP
+				cout << "110" << "\t" << svc.sercversion[i] << "\n";
+				break;
+			case 5:	// IMAP
+				cout << "143" << "\t" << svc.sercversion[i] << "\n";
+				break;
+			default:
+				break;
+		}
+	}
 }

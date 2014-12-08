@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
 		scanman.runJobs();
 		scanman.printScanResults();
 	} else {	// multi-threaded
-		cout << "\ni'd like threads today please" << endl;
+		cout << "\nthreads" << endl;
 	}
 
 	alarm(0);	// turn alarm off

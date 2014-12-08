@@ -86,6 +86,8 @@ class Scanner {
 		char * getRandomUDPpayload();
 		void printScanResults();
 		char * getServiceName(char *, int);
+		void getServiceVersion(int, char *, service_version_t &);
+		void printServiceVersions(service_version_t &);
 };
 
 

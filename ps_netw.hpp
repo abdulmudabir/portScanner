@@ -35,9 +35,11 @@ typedef struct scan_result {
 // global variables
 extern queue<job_t> workQueue;  // queue of all jobs
 extern vector<scan_result_t> scansResultsVect;  // vector of all scan results structures
-// extern map< int, vector<scan_result_t> > port2scanresultsMap;   // port number mapped to its vector of scan results structure
-// extern map< char *, map< int, vector<scan_result_t> > > resultsMap; // IP address mapped to port->scanresults map
-// extern map< char *, vector<scan_result_t> > ip2resultsMap;  // to map every IP addr to each scan type performed on it
+
+typedef struct service_version {
+    char ipAddr[INET_ADDRSTRLEN];
+    char sercversion[6][80];    // store service version for each known standard port e.g. 22 (SSH), 80 (HTTP), etc.
+} service_version_t;
 
 class Jobber {
     public:
