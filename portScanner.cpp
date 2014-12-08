@@ -23,21 +23,21 @@ int main(int argc, char *argv[]) {
 	ps_args.parse_args(argc, argv);
 
 	// print IPs
-	/*cout << "\n"<< "=============== IPs to be scanned ===============" << endl << endl;
-	ps_args.print_setelems(ips_set);*/
+	cout << "\n"<< "=============== IPs to be scanned ===============" << endl << endl;
+	ps_args.print_setelems(ips_set);
 
 	// print ports
-/*	cout << endl << "=============== Ports to scan ===============" << endl << endl;
-	ps_args.print_setelems(ports_set);*/
+	cout << endl << "=============== Ports to scan ===============" << endl << endl;
+	ps_args.print_setelems(ports_set);
 
 	// print number of threads to run
-/*	cout << endl << "=============== Threads ===============" << endl << endl;
-	cout << "Number of threads specified: " << ps_args.get_threads() << endl << endl;*/
+	cout << endl << "=============== Threads ===============" << endl << endl;
+	cout << "Number of threads specified: " << ps_args.get_threads() << endl << endl;
 
 	// print type/s of scans specified
-/*	cout << endl << "=============== Scan types ===============" << endl << endl;
+	cout << endl << "=============== Scan types ===============" << endl << endl;
 	ps_args.print_setelems(scans_set);
-	cout << endl;*/
+	cout << endl;
 
 	// create a work queue
 	Jobber jobman;
